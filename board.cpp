@@ -4,9 +4,33 @@ Board::Board() {
     resetBoard();
 }
 
-bool Board::makeMove(Move move){
-    return false;
+void Board::makeMove(const Move& move, bool switch_side) {
+    int from_square = move.from_square;
+    int to_square = move.to_square;
+    int piece_type = move.piece;
+    int captured_piece_type = move.captured_piece;
+
+    // Remove the piece from the from_square
+    clear_bit(bitboards[piece_type], from_square);
+
+    // Place the piece on the to_square
+    set_bit(bitboards[piece_type], to_square);
+
+    // Handle captures
+    if (captured_piece_type != NO_PIECE) {
+        // Remove the captured piece from its bitboard
+        clear_bit(bitboards[captured_piece_type], to_square);
+    }
+
+    // Update occupancies
+    updateOccupancies();
+
+    // Switch the side to move if needed
+    if (switch_side) {
+        side = (side == WHITE) ? BLACK : WHITE;
+    }
 }
+
 
 
 void Board::resetBoard() {

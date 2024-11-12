@@ -178,9 +178,9 @@ void testRookLegalMovesKingSafe() {
     board.updateOccupancies();
 
     // Place a white rook at D4
-    set_bit(board.bitboards[WHITE_ROOK], 27);
+    set_bit(board.bitboards[WHITE_ROOK], D4);
     // Place white king at E1 (square 4)
-    set_bit(board.bitboards[WHITE_KING], 4);
+    set_bit(board.bitboards[WHITE_KING], E1);
     board.side = WHITE;
     board.updateOccupancies();
 
@@ -190,15 +190,15 @@ void testRookLegalMovesKingSafe() {
     moveGenerator.generateAllLegalMoves(board, move_list);
 
     // Expected moves: All rook moves from D4
-    size_t expected_move_count = 14;
-    assert(move_list.size() == expected_move_count);
-
-    // Optionally, print the moves
     std::cout << "Test: Rook Legal Moves When King Is Safe\n";
     std::cout << "Generated moves (" << move_list.size() << "):\n";
     for (const Move& move : move_list) {
         std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << "\n";
     }
+    size_t expected_move_count = 14;
+    assert(move_list.size() == expected_move_count);
+
+
     std::cout << "Test passed.\n\n";
 }
 
@@ -214,11 +214,11 @@ void testRookLegalMovesKingInCheckBlock() {
     board.updateOccupancies();
 
     // Place white king at E1 (square 4)
-    set_bit(board.bitboards[WHITE_KING], 4);
+    set_bit(board.bitboards[WHITE_KING], E1);
     // Place white rook at E2 (square 12)
-    set_bit(board.bitboards[WHITE_ROOK], 12);
+    set_bit(board.bitboards[WHITE_ROOK], E2);
     // Place black rook at E8 (square 60), putting the white king in check
-    set_bit(board.bitboards[BLACK_ROOK], 60);
+    set_bit(board.bitboards[BLACK_ROOK], E8);
     board.side = WHITE;
     board.updateOccupancies();
 
@@ -230,15 +230,16 @@ void testRookLegalMovesKingInCheckBlock() {
     // Expected moves:
     // - Rook moves from E2 to any square that blocks the check (E3, E4, E5, E6, E7)
     // - Note: E1 is occupied by the king, so the rook cannot move there
-    size_t expected_move_count = 5; // E2->E3, E2->E4, E2->E5, E2->E6, E2->E7
-    assert(move_list.size() == expected_move_count);
-
-    // Optionally, print the moves
-    std::cout << "Test: Rook Legal Moves When King Is in Check and Rook Can Block\n";
+    std::cout << "\nTest: Rook Legal Moves When King Is in Check and Rook Can Block\n";
     std::cout << "Generated moves (" << move_list.size() << "):\n";
     for (const Move& move : move_list) {
         std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << "\n";
     }
+    
+    size_t expected_move_count = 6; // E2->E3, E2->E4, E2->E5, E2->E6, E2->E7, e2->E8
+    assert(move_list.size() == expected_move_count);
+
+
     std::cout << "Test passed.\n\n";
 }
 
@@ -269,10 +270,6 @@ void testRookLegalMovesKingInCheckCapture() {
 
     // Expected moves:
     // - Rook captures the attacking rook: A4->E4
-    size_t expected_move_count = 1; // Only the capturing move
-    assert(move_list.size() == expected_move_count);
-
-    // Optionally, print the moves
     std::cout << "Test: Rook Legal Moves When King Is in Check and Rook Can Capture Attacker\n";
     std::cout << "Generated moves (" << move_list.size() << "):\n";
     for (const Move& move : move_list) {
@@ -282,6 +279,11 @@ void testRookLegalMovesKingInCheckCapture() {
         }
         std::cout << "\n";
     }
+
+
+    size_t expected_move_count = 1; // Only the capturing move
+    assert(move_list.size() == expected_move_count);
+
     std::cout << "Test passed.\n\n";
 }
 
@@ -310,17 +312,17 @@ void testRookLegalMovesKingInCheckRookCannotHelp() {
     std::vector<Move> move_list;
     moveGenerator.generateAllLegalMoves(board, move_list);
 
-    // Expected moves:
-    // - Since the rook cannot block a diagonal check or capture the bishop, no rook moves are legal
-    size_t expected_move_count = 0; // No rook moves
-    assert(move_list.size() == expected_move_count);
-
-    // Optionally, print the moves
     std::cout << "Test: Rook Legal Moves When King Is in Check and Rook Cannot Help\n";
     std::cout << "Generated moves (" << move_list.size() << "):\n";
     for (const Move& move : move_list) {
         std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << "\n";
     }
+
+    // Expected moves:
+    // - Since the rook cannot block a diagonal check or capture the bishop, no rook moves are legal
+    size_t expected_move_count = 0; // No rook moves
+    assert(move_list.size() == expected_move_count);
+
     std::cout << "Test passed.\n\n";
 }
 

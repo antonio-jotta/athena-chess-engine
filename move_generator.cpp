@@ -10,7 +10,7 @@ void MoveGenerator::generateAllMoves(const Board& board, std::vector<Move>& move
 }
 
 void MoveGenerator::generateAllLegalMoves(const Board& board, std::vector<Move>& move_list) {
-    // Generate all pseudolegal moves
+    // Generate pseudolegal moves
     std::vector<Move> pseudolegal_moves;
     generateAllMoves(board, pseudolegal_moves);
 
@@ -19,17 +19,22 @@ void MoveGenerator::generateAllLegalMoves(const Board& board, std::vector<Move>&
         // Make a copy of the board
         Board board_copy = board;
 
-        // Make the move on the copy
-        board_copy.makeMove(move);
+        // Make the move on the copy, do not switch sides
+        board_copy.makeMove(move, false);
 
-        // Check if the king is in check
+        // Check if the king is in check after the move
         if (!isKingInCheck(board_copy, board.side)) {
             // Move is legal, add to move_list
             move_list.push_back(move);
+        }else {
+            // Debugging output
+            std::cout << "Move " << squareToAlgebraic(move.from_square)
+                      << " -> " << squareToAlgebraic(move.to_square)
+                      << " is illegal; king is in check after this move.\n";
         }
-        // Else, move is illegal (king is in check), discard it
     }
 }
+
 
 // void MoveGenerator::generatePawnMoves(const Board& board, std::vector<Move>& move_list){
     
@@ -137,7 +142,7 @@ bool MoveGenerator::isSquareAttackedByRookOrQueen(const Board& board, int square
         clear_bit(pieces, piece_square);
 
         // Generate rook attacks inline
-        const int directions[4] = { 8, -8, 1, -1 }; // N, S, E, W
+        const int directions[4] = {NORTH, SOUTH, EAST, WEST}; 
         for (int dir = 0; dir < 4; ++dir) {
             int to_square = piece_square;
 

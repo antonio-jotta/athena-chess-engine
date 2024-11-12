@@ -5,7 +5,6 @@
 #include "move.h"
 #include <vector>
 
-const int NO_PIECE = -1;
 
 class MoveGenerator{
     public:

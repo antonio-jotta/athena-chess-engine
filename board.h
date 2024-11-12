@@ -4,6 +4,8 @@
 #include <iostream>
 #include "move.h"
 typedef unsigned long long U64;
+const int NO_PIECE = -1;
+
 
 // Enum for pieces
 
@@ -80,7 +82,7 @@ class Board{
         void resetBoard();
         void printBoard();
         void updateOccupancies();
-        bool makeMove(Move move);
+        void makeMove(const Move& move, bool switch_side = true);
 };
 
 // Bit manipulation functions
