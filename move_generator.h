@@ -1,0 +1,40 @@
+#ifndef MOVE_GENERATOR_H
+#define MOVE_GENERATOR_H
+
+#include "board.h"
+#include "move.h"
+#include <vector>
+
+const int NO_PIECE = -1;
+
+class MoveGenerator{
+    public:
+        void generateAllMoves(const Board& board, std::vector<Move>& move_list);
+        // Direction offsets
+        static constexpr int NORTH = +8;
+        static constexpr int SOUTH = -8;
+        static constexpr int EAST  = +1;
+        static constexpr int WEST  = -1;
+        static constexpr int NORTH_EAST = +9;
+        static constexpr int NORTH_WEST = +7;
+        static constexpr int SOUTH_EAST = -7;
+        static constexpr int SOUTH_WEST = -9;
+        void generatePawnMoves(const Board& board, std::vector<Move>& move_list);
+        void generateKnightMoves(const Board& board, std::vector<Move>& move_list);
+        void generateBishopMoves(const Board& board, std::vector<Move>& move_list);
+        void generateRookMoves(const Board& board, std::vector<Move>& move_list);
+        void generateQueenMoves(const Board& board, std::vector<Move>& move_list);
+        void generateKingMoves(const Board& board, std::vector<Move>& move_list);
+        void generateSlidingMovesInDirection(const Board& board, 
+            std::vector<Move>& move_list,
+            int start_square,
+            int direction_offset,
+            int side,
+            int opponent_side,
+            int piece_type);
+        bool isBoundaryCrossed(int from_square, int to_square, int direction_offset);
+        int getPieceOnSquare(const Board& board, int square, int opponent_side);
+
+};
+
+#endif
