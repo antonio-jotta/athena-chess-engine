@@ -255,11 +255,11 @@ void testRookLegalMovesKingInCheckCapture() {
     board.updateOccupancies();
 
     // Place white king at E1 (square 4)
-    set_bit(board.bitboards[WHITE_KING], 4);
+    set_bit(board.bitboards[WHITE_KING], E1);
     // Place white rook at A4 (square 24)
-    set_bit(board.bitboards[WHITE_ROOK], 24);
+    set_bit(board.bitboards[WHITE_ROOK], A4);
     // Place black rook at E4 (square 28), putting the white king in check along the rank
-    set_bit(board.bitboards[BLACK_ROOK], 28);
+    set_bit(board.bitboards[BLACK_ROOK], E4);
     board.side = WHITE;
     board.updateOccupancies();
 
@@ -299,11 +299,11 @@ void testRookLegalMovesKingInCheckRookCannotHelp() {
     board.updateOccupancies();
 
     // Place white king at E1 (square 4)
-    set_bit(board.bitboards[WHITE_KING], 4);
+    set_bit(board.bitboards[WHITE_KING], E1);
     // Place white rook at A1 (square 0)
-    set_bit(board.bitboards[WHITE_ROOK], 0);
+    set_bit(board.bitboards[WHITE_ROOK], H7);
     // Place black bishop at H5 (square 39), putting the white king in check diagonally
-    set_bit(board.bitboards[BLACK_BISHOP], 39);
+    set_bit(board.bitboards[BLACK_ROOK], E4);
     board.side = WHITE;
     board.updateOccupancies();
 
@@ -319,7 +319,6 @@ void testRookLegalMovesKingInCheckRookCannotHelp() {
     }
 
     // Expected moves:
-    // - Since the rook cannot block a diagonal check or capture the bishop, no rook moves are legal
     size_t expected_move_count = 0; // No rook moves
     assert(move_list.size() == expected_move_count);
 
