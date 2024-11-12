@@ -2,6 +2,7 @@
 #define BOARD_H
 #include <string>
 #include <iostream>
+#include "move.h"
 typedef unsigned long long U64;
 
 // Enum for pieces
@@ -11,13 +12,13 @@ enum Piece {
     WHITE_KNIGHT, // 1
     WHITE_BISHOP, // 2
     WHITE_ROOK,   // 3
-    WHITE_QUUEN,  // 4
+    WHITE_QUEEN,  // 4
     WHITE_KING,   // 5
     BLACK_PAWN,   // 6
     BLACK_KNIGHT, // 7
     BLACK_BISHOP, // 8
     BLACK_ROOK,   // 9
-    BLACK_QUUEN,  // 10
+    BLACK_QUEEN,  // 10
     BLACK_KING    // 11
 };
 
@@ -48,6 +49,15 @@ enum CastlingRights {
     CASTLE_BLACK_QUEEN_SIDE = 8  // 1000
 };
 
+constexpr U64 FILE_A = 0x0101010101010101ULL;
+constexpr U64 FILE_B = 0x0202020202020202ULL;
+constexpr U64 FILE_C = 0x0404040404040404ULL;
+constexpr U64 FILE_D = 0x0808080808080808ULL;
+constexpr U64 FILE_E = 0x1010101010101010ULL;
+constexpr U64 FILE_F = 0x2020202020202020ULL;
+constexpr U64 FILE_G = 0x4040404040404040ULL;
+constexpr U64 FILE_H = 0x8080808080808080ULL;
+
 class Board{
     public:
         // Bitboards for each piece
@@ -70,6 +80,7 @@ class Board{
         void resetBoard();
         void printBoard();
         void updateOccupancies();
+        bool makeMove(Move move);
 };
 
 // Bit manipulation functions

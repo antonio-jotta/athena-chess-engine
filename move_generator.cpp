@@ -9,6 +9,28 @@ void MoveGenerator::generateAllMoves(const Board& board, std::vector<Move>& move
     // generateKingMoves(board, move_list);
 }
 
+void MoveGenerator::generateAllLegalMoves(const Board& board, std::vector<Move>& move_list) {
+    // Generate all pseudolegal moves
+    std::vector<Move> pseudolegal_moves;
+    generateAllMoves(board, pseudolegal_moves);
+
+    // For each move, check if it's legal
+    for (const Move& move : pseudolegal_moves) {
+        // Make a copy of the board
+        Board board_copy = board;
+
+        // Make the move on the copy
+        board_copy.makeMove(move);
+
+        // Check if the king is in check
+        if (!isKingInCheck(board_copy, board.side)) {
+            // Move is legal, add to move_list
+            move_list.push_back(move);
+        }
+        // Else, move is illegal (king is in check), discard it
+    }
+}
+
 // void MoveGenerator::generatePawnMoves(const Board& board, std::vector<Move>& move_list){
     
 // }
@@ -57,17 +79,16 @@ void MoveGenerator::generateSlidingMovesInDirection(
 
     while (to_square >= 0 && to_square < 64) {
         // Debug output for each evaluated square
-        std::cout << "Evaluating move from " << squareToAlgebraic(start_square) 
-                  << " to " << squareToAlgebraic(to_square) << "\n";
+        //std::cout << "Evaluating move from " << squareToAlgebraic(start_square) << " to " << squareToAlgebraic(to_square) << "\n";
 
         if (isBoundaryCrossed(start_square, to_square, direction_offset)) {
-            std::cout << "Boundary crossed at " << squareToAlgebraic(to_square) << "\n";
+            //std::cout << "Boundary crossed at " << squareToAlgebraic(to_square) << "\n";
             break;
         }
 
         // Check if square is occupied by a friendly piece
         if (get_bit(board.occupancies[side], to_square)) {
-            std::cout << "Blocked by friendly piece at " << squareToAlgebraic(to_square) << "\n";
+            //std::cout << "Blocked by friendly piece at " << squareToAlgebraic(to_square) << "\n";
             break;
         }
 
@@ -79,7 +100,7 @@ void MoveGenerator::generateSlidingMovesInDirection(
             captured_piece = getPieceOnSquare(board, to_square, opponent_side);
             flags |= FLAG_CAPTURE;
             move_list.emplace_back(start_square, to_square, piece_type, captured_piece, NO_PIECE, flags);
-            std::cout << "Captured opponent piece at " << squareToAlgebraic(to_square) << "\n";
+            //std::cout << "Captured opponent piece at " << squareToAlgebraic(to_square) << "\n";
             break;
         } else {
             move_list.emplace_back(start_square, to_square, piece_type, NO_PIECE, NO_PIECE, flags);
@@ -89,14 +110,73 @@ void MoveGenerator::generateSlidingMovesInDirection(
     }
 }
 
+bool MoveGenerator::isKingInCheck(const Board& board, int side) {
+    int king_square = bitscanForward(board.bitboards[(side == WHITE) ? WHITE_KING : BLACK_KING]);
 
+    // Generate attack bitboards for opponent
+    int opponent_side = (side == WHITE) ? BLACK : WHITE;
+
+    // Check for attacks from pawns, knights, bishops, rooks, queens, and the opponent's king
+    //if (isSquareAttackedByPawn(board, king_square, opponent_side)) return true;
+    //if (isSquareAttackedByKnight(board, king_square, opponent_side)) return true;
+    //if (isSquareAttackedByBishopOrQueen(board, king_square, opponent_side)) return true;
+    if (isSquareAttackedByRookOrQueen(board, king_square, opponent_side)) return true;
+    //if (isSquareAttackedByKing(board, king_square, opponent_side)) return true;
+
+    // No attacks on the king
+    return false;
+}
+
+bool MoveGenerator::isSquareAttackedByRookOrQueen(const Board& board, int square, int opponent_side) {
+    U64 rooks = board.bitboards[(opponent_side == WHITE) ? WHITE_ROOK : BLACK_ROOK];
+    U64 queens = board.bitboards[(opponent_side == WHITE) ? WHITE_QUEEN : BLACK_QUEEN];
+    U64 pieces = rooks | queens;
+
+    while (pieces) {
+        int piece_square = bitscanForward(pieces);
+        clear_bit(pieces, piece_square);
+
+        // Generate rook attacks inline
+        const int directions[4] = { 8, -8, 1, -1 }; // N, S, E, W
+        for (int dir = 0; dir < 4; ++dir) {
+            int to_square = piece_square;
+
+            while (true) {
+                to_square += directions[dir];
+                if (to_square < 0 || to_square >= 64 || isBoundaryCrossed(piece_square, to_square, directions[dir])) {
+                    break;
+                }
+
+                if (get_bit(board.occupancies[BOTH], to_square)) {
+                    if (to_square == square) {
+                        return true; // Target square is attacked
+                    }
+                    break; // Blocked by other piece
+                }
+
+                if (to_square == square) {
+                    return true; // Target square is attacked
+                }
+            }
+        }
+    }
+
+    // No attacks found
+    return false;
+}
 
 bool MoveGenerator::isBoundaryCrossed(int from_square, int to_square, int direction_offset) {
-    // For horizontal moves (right/left), check if we stay on the same rank
-    if (direction_offset == 1 || direction_offset == -1) {
+    if (direction_offset == EAST || direction_offset == WEST) {
+        // Horizontal moves (E/W)
         return (from_square / 8) != (to_square / 8);
+    } else if (direction_offset == NORTH_EAST || direction_offset == SOUTH_EAST) {
+        // Northeast/Southwest moves
+        return ((from_square % 8) == NORTH_WEST) || ((to_square % 8) == 0);
+    } else if (direction_offset == NORTH_WEST || direction_offset == SOUTH_WEST) {
+        // Northwest/Southeast moves
+        return ((from_square % 8) == 0) || ((to_square % 8) == NORTH_WEST);
     }
-    // For vertical moves (up/down), no boundary crossing occurs
+    // Vertical moves (N/S) don't cross boundaries
     return false;
 }
 

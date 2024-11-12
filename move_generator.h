@@ -32,6 +32,13 @@ class MoveGenerator{
             int side,
             int opponent_side,
             int piece_type);
+        void generateAllLegalMoves(const Board& board, std::vector<Move>& move_list);
+        bool isKingInCheck(const Board& board, int side);
+        bool isSquareAttackedByPawn(const Board& board, int square, int opponent_side);
+        bool isSquareAttackedByKnight(const Board& board, int square, int opponent_side);
+        bool isSquareAttackedByBishopOrQueen(const Board& board, int square, int opponent_side);
+        bool isSquareAttackedByRookOrQueen(const Board& board, int square, int opponent_side);
+        bool isSquareAttackedByKing(const Board& board, int square, int opponent_side);
         bool isBoundaryCrossed(int from_square, int to_square, int direction_offset);
         int getPieceOnSquare(const Board& board, int square, int opponent_side);
 

@@ -4,6 +4,11 @@ Board::Board() {
     resetBoard();
 }
 
+bool Board::makeMove(Move move){
+    return false;
+}
+
+
 void Board::resetBoard() {
     // Clear all bitboards
     for (int i = 0; i < 12; i++)
@@ -14,14 +19,14 @@ void Board::resetBoard() {
     bitboards[WHITE_KNIGHT] = 0x0000000000000042ULL; // Knights on b1 and g1
     bitboards[WHITE_BISHOP] = 0x0000000000000024ULL; // Bishops on c1 and f1
     bitboards[WHITE_ROOK]   = 0x0000000000000081ULL; // Rooks on a1 and h1
-    bitboards[WHITE_QUUEN]  = 0x0000000000000010ULL; // Queen on d1
+    bitboards[WHITE_QUEEN]  = 0x0000000000000010ULL; // Queen on d1
     bitboards[WHITE_KING]   = 0x0000000000000008ULL; // King on e1
 
     bitboards[BLACK_PAWN]   = 0x00FF000000000000ULL; // Pawns on rank 7
     bitboards[BLACK_KNIGHT] = 0x4200000000000000ULL; // Knights on b8 and g8
     bitboards[BLACK_BISHOP] = 0x2400000000000000ULL; // Bishops on c8 and f8
     bitboards[BLACK_ROOK]   = 0x8100000000000000ULL; // Rooks on a8 and h8
-    bitboards[BLACK_QUUEN]  = 0x1000000000000000ULL; // Queen on d8
+    bitboards[BLACK_QUEEN]  = 0x1000000000000000ULL; // Queen on d8
     bitboards[BLACK_KING]   = 0x0800000000000000ULL; // King on e8
 
     // Update occupancies
@@ -70,13 +75,13 @@ void Board::printBoard() {
                         case WHITE_KNIGHT: pieceChar = 'N'; break;
                         case WHITE_BISHOP: pieceChar = 'B'; break;
                         case WHITE_ROOK:   pieceChar = 'R'; break;
-                        case WHITE_QUUEN:  pieceChar = 'Q'; break;
+                        case WHITE_QUEEN:  pieceChar = 'Q'; break;
                         case WHITE_KING:   pieceChar = 'K'; break;
                         case BLACK_PAWN:   pieceChar = 'p'; break;
                         case BLACK_KNIGHT: pieceChar = 'n'; break;
                         case BLACK_BISHOP: pieceChar = 'b'; break;
                         case BLACK_ROOK:   pieceChar = 'r'; break;
-                        case BLACK_QUUEN:  pieceChar = 'q'; break;
+                        case BLACK_QUEEN:  pieceChar = 'q'; break;
                         case BLACK_KING:   pieceChar = 'k'; break;
                     }
                     break;
