@@ -56,70 +56,50 @@ void MoveGenerator::generateSlidingMovesInDirection(
     int to_square = start_square + direction_offset;
 
     while (to_square >= 0 && to_square < 64) {
-        // Boundary check to prevent wrapping around the board
+        // Debug output for each evaluated square
+        std::cout << "Evaluating move from " << squareToAlgebraic(start_square) 
+                  << " to " << squareToAlgebraic(to_square) << "\n";
+
         if (isBoundaryCrossed(start_square, to_square, direction_offset)) {
+            std::cout << "Boundary crossed at " << squareToAlgebraic(to_square) << "\n";
             break;
         }
 
-        // Check if the square is occupied by a friendly piece
+        // Check if square is occupied by a friendly piece
         if (get_bit(board.occupancies[side], to_square)) {
-            break; // Friendly piece blocks the way
+            std::cout << "Blocked by friendly piece at " << squareToAlgebraic(to_square) << "\n";
+            break;
         }
 
-        // Prepare move details
         int captured_piece = NO_PIECE;
         uint8_t flags = FLAG_NONE;
 
-        // Check if the square is occupied by an opponent's piece
+        // Check if occupied by an opponent's piece
         if (get_bit(board.occupancies[opponent_side], to_square)) {
-            // Capture move
             captured_piece = getPieceOnSquare(board, to_square, opponent_side);
             flags |= FLAG_CAPTURE;
-
-            // Add the capture move
-            move_list.emplace_back(
-                start_square,
-                to_square,
-                piece_type,
-                captured_piece,
-                NO_PIECE, // promoted_piece
-                flags
-            );
-
-            break; // Stop after capturing
+            move_list.emplace_back(start_square, to_square, piece_type, captured_piece, NO_PIECE, flags);
+            std::cout << "Captured opponent piece at " << squareToAlgebraic(to_square) << "\n";
+            break;
         } else {
-            // Regular move
-            move_list.emplace_back(
-                start_square,
-                to_square,
-                piece_type,
-                NO_PIECE,   // captured_piece
-                NO_PIECE,   // promoted_piece
-                flags
-            );
+            move_list.emplace_back(start_square, to_square, piece_type, NO_PIECE, NO_PIECE, flags);
         }
 
-        // Move to the next square in the direction
         to_square += direction_offset;
     }
 }
 
 
+
 bool MoveGenerator::isBoundaryCrossed(int from_square, int to_square, int direction_offset) {
-    // For horizontal moves (left and right), check if we stay on the same rank
-    if (direction_offset == -1 || direction_offset == 1) {
+    // For horizontal moves (right/left), check if we stay on the same rank
+    if (direction_offset == 1 || direction_offset == -1) {
         return (from_square / 8) != (to_square / 8);
     }
-    // For diagonal moves, ensure we don't wrap around horizontally
-    if (direction_offset == 9 || direction_offset == -9 ||
-        direction_offset == 7 || direction_offset == -7) {
-        int from_file = from_square % 8;
-        int to_file = to_square % 8;
-        return std::abs(from_file - to_file) != 1;
-    }
-    // For vertical moves (up and down), no boundary crossing occurs
+    // For vertical moves (up/down), no boundary crossing occurs
     return false;
 }
+
 
 int MoveGenerator::getPieceOnSquare(const Board& board, int square, int opponent_side) {
     int opponent_start = (opponent_side == WHITE) ? WHITE_PAWN : BLACK_PAWN;

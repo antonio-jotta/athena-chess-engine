@@ -87,5 +87,6 @@ inline void clear_bit(U64& bitboard, int square) {
 // Additional utility functions
 int bitscanForward(U64 bb);
 int countBits(U64 bb);
+std::string squareToAlgebraic(int square);
 
 #endif

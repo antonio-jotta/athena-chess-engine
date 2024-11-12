@@ -92,6 +92,18 @@ void Board::printBoard() {
     std::cout << "Castling: " << castling_rights << "\n";
 }
 
+std::string squareToAlgebraic(int square) {
+    // Ensure square is within bounds
+    if (square < 0 || square > 63) {
+        return "Invalid";  // Return an error string if out of bounds
+    }
+    
+    char file = 'a' + (square % 8);       // File from 'a' to 'h'
+    char rank = '1' + (square / 8);       // Rank from '1' to '8'
+    
+    return std::string(1, file) + std::string(1, rank);
+}
+
 // Find the index of the least significant 1 bit in b (returns 0-based index)
 // Used for iteration in the bitboard
 int bitscanForward(U64 b) {
@@ -124,3 +136,4 @@ int countBits(U64 b) {
         return count;
     #endif
 }
+

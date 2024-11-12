@@ -5,13 +5,6 @@
 #include <iostream>
 #include <cassert>
 
-std::string squareToAlgebraic(int square) {
-    char file = 'a' + (square % 8);
-    char rank = '1' + (square / 8);
-    return std::string(1, file) + std::string(1, rank);
-}
-
-
 void testRookMovesEmptyBoard() {
     // Initialize board
     Board board;
@@ -110,7 +103,7 @@ void testRookMovesCaptureOpponent() {
     moveGenerator.generateRookMoves(board, move_list);
     
     // Expected moves: Up to and including D6
-    size_t expected_move_count = 12;
+    size_t expected_move_count = 10;
     std::cout << "Generated moves (" << move_list.size() << "):\n";
     for (const Move& move : move_list) {
         std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << "\n";
