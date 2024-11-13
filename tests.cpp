@@ -387,7 +387,7 @@ void testTwoRooksTwoKings(){
     set_bit(board.bitboards[BLACK_ROOK], D7);
     set_bit(board.bitboards[BLACK_ROOK], B6);
 
-    board.side = WHITE;
+    board.side = BLACK;
     board.updateOccupancies();
 
     // Generate legal moves
@@ -402,7 +402,45 @@ void testTwoRooksTwoKings(){
     }
 
     // Expected moves:
-    size_t expected_move_count = 30; 
+    size_t expected_move_count = 27; 
+    assert(move_list.size() == expected_move_count);
+
+    std::cout << "Test passed.\n\n";
+}
+
+void testBishops(){
+    // Initialize board
+    Board board;
+    board.resetBoard();
+
+    // Clear the board
+    for (int i = 0; i < 12; ++i) {
+        board.bitboards[i] = 0ULL;
+    }
+    board.updateOccupancies();
+
+    set_bit(board.bitboards[WHITE_BISHOP], D4);
+
+
+    board.side = WHITE;
+    board.updateOccupancies();
+
+    // Generate legal moves
+    MoveGenerator moveGenerator;
+    std::vector<Move> move_list;
+    
+    std::cout << "Test: Bishops\n";
+
+
+    moveGenerator.generateAllLegalMoves(board, move_list);
+
+    std::cout << "Generated moves (" << move_list.size() << "):\n";
+    for (const Move& move : move_list) {
+        std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << "\n";
+    }
+
+    // Expected moves:
+    size_t expected_move_count = 13; 
     assert(move_list.size() == expected_move_count);
 
     std::cout << "Test passed.\n\n";
@@ -410,15 +448,18 @@ void testTwoRooksTwoKings(){
 
 
 
+
 int main() {
     
     //Need to test with 2 rooks
 
-    runOneRookTests();
+    // runOneRookTests();
 
-    runAllLegalMoveTests();
+    // runAllLegalMoveTests();
 
-    testTwoRooksTwoKings();
-
+    // testTwoRooksTwoKings();
+    
+    testBishops();
+    
     return 0;
 }

@@ -3,8 +3,8 @@
 void MoveGenerator::generateAllMoves(const Board& board, std::vector<Move>& move_list){
     // generatePawnMoves(board, move_list);
     // generateKnightMoves(board, move_list);
-    // generateBishopMoves(board, move_list);
-    generateRookMoves(board, move_list);
+    //generateBishopMoves(board, move_list);
+    //generateRookMoves(board, move_list);
     // generateQueenMoves(board, move_list);
     generateKingMoves(board, move_list);
 }
@@ -39,6 +39,36 @@ void MoveGenerator::generateAllLegalMoves(const Board& board, std::vector<Move>&
 // void MoveGenerator::generatePawnMoves(const Board& board, std::vector<Move>& move_list){
     
 // }
+
+void MoveGenerator::generateBishopMoves(const Board& board, std::vector<Move>& move_list) {
+    int side = board.side;
+    int opponent_side = (side == WHITE) ? BLACK : WHITE;
+    int bishop_piece = (side == WHITE) ? WHITE_BISHOP : BLACK_BISHOP;
+    U64 bishops = board.bitboards[bishop_piece];
+
+    // Define the direction offsets for the rook 
+    const int directions[4] = {NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
+
+    // Loop through each rook
+    while (bishops) {
+        int bishop_square = bitscanForward(bishops);
+        clear_bit(bishops, bishop_square);
+
+        // Generate moves in all four directions
+        for (int dir = 0; dir < 4; ++dir) {
+            int direction_offset = directions[dir];
+            generateSlidingMovesInDirection(
+                board,
+                move_list,
+                bishop_square,
+                direction_offset,
+                side,
+                opponent_side,
+                bishop_piece
+            );
+        }
+    }
+}
 
 void MoveGenerator::generateRookMoves(const Board& board, std::vector<Move>& move_list) {
     int side = board.side;
@@ -85,7 +115,7 @@ void MoveGenerator::generateKingMoves(const Board& board, std::vector<Move>& mov
             int direction_offset = directions[dir];
             int to_square = king_square + direction_offset;
             if (to_square < 0 || to_square >= 64 || isBoundaryCrossed(king_square, to_square, direction_offset)) {
-                std::cout << "Boundary crossed at " << squareToAlgebraic(to_square) << "\n";
+                //std::cout << "Boundary crossed at " << squareToAlgebraic(to_square) << "\n";
             continue;
             }
             // Check if square is occupied by a friendly piece
@@ -126,10 +156,9 @@ void MoveGenerator::generateSlidingMovesInDirection(
         //std::cout << "Evaluating move from " << squareToAlgebraic(start_square) << " to " << squareToAlgebraic(to_square) << "\n";
 
         if (isBoundaryCrossed(start_square, to_square, direction_offset)) {
-            //std::cout << "Boundary crossed at " << squareToAlgebraic(to_square) << "\n";
+            std::cout << "Boundary crossed at " << squareToAlgebraic(to_square) << "\n";
             break;
         }
-
         // Check if square is occupied by a friendly piece
         if (get_bit(board.occupancies[side], to_square)) {
             //std::cout << "Blocked by friendly piece at " << squareToAlgebraic(to_square) << "\n";
@@ -143,10 +172,12 @@ void MoveGenerator::generateSlidingMovesInDirection(
         if (get_bit(board.occupancies[opponent_side], to_square)) {
             captured_piece = getPieceOnSquare(board, to_square, opponent_side);
             flags |= FLAG_CAPTURE;
+            
             move_list.emplace_back(start_square, to_square, piece_type, captured_piece, NO_PIECE, flags);
-            //std::cout << "Captured opponent piece at " << squareToAlgebraic(to_square) << "\n";
+            std::cout << "Captured opponent piece at " << squareToAlgebraic(to_square) << "\n";
             break;
         } else {
+            // O problema dos bispos não é aqui
             move_list.emplace_back(start_square, to_square, piece_type, NO_PIECE, NO_PIECE, flags);
         }
 
