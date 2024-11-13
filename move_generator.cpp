@@ -3,8 +3,8 @@
 void MoveGenerator::generateAllMoves(const Board& board, std::vector<Move>& move_list){
     // generatePawnMoves(board, move_list);
     // generateKnightMoves(board, move_list);
-    //generateBishopMoves(board, move_list);
-    //generateRookMoves(board, move_list);
+    generateBishopMoves(board, move_list);
+    generateRookMoves(board, move_list);
     // generateQueenMoves(board, move_list);
     generateKingMoves(board, move_list);
 }
@@ -108,8 +108,8 @@ void MoveGenerator::generateKingMoves(const Board& board, std::vector<Move>& mov
 
     int king_square = bitscanForward(king);
     clear_bit(king, king_square);
-
-    const int directions[8] = {NORTH, SOUTH, EAST, WEST, NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
+    while(king){
+        const int directions[8] = {NORTH, SOUTH, EAST, WEST, NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
             // Generate moves in all directions
         for (int dir = 0; dir < 8; ++dir) {
             int direction_offset = directions[dir];
@@ -137,6 +137,7 @@ void MoveGenerator::generateKingMoves(const Board& board, std::vector<Move>& mov
                 move_list.emplace_back(king_square, to_square, king_piece, NO_PIECE, NO_PIECE, flags);
             }
         }
+    }
 }
 
 
