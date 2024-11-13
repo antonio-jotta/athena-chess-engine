@@ -35,7 +35,7 @@ class MoveGenerator{
         bool isKingInCheck(const Board& board, int side);
         bool isSquareAttackedByPawn(const Board& board, int square, int opponent_side);
         bool isSquareAttackedByKnight(const Board& board, int square, int opponent_side);
-        bool isSquareAttackedByBishopOrQueen(const Board& board, int square, int opponent_side);
+        bool isSquareAttackedByBishop(const Board& board, int square, int opponent_side);
         bool isSquareAttackedByRook(const Board& board, int square, int opponent_side);
         bool isSquareAttackedByKing(const Board& board, int square, int opponent_side);
         bool isBoundaryCrossed(int from_square, int to_square, int direction_offset);

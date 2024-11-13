@@ -419,9 +419,9 @@ void testBishops(){
     }
     board.updateOccupancies();
 
-    set_bit(board.bitboards[WHITE_BISHOP], D4);
-
-
+    set_bit(board.bitboards[WHITE_BISHOP], F6);
+    set_bit(board.bitboards[WHITE_KING], D2);
+    set_bit(board.bitboards[BLACK_BISHOP], A5);
     board.side = WHITE;
     board.updateOccupancies();
 
@@ -440,7 +440,7 @@ void testBishops(){
     }
 
     // Expected moves:
-    size_t expected_move_count = 13; 
+    size_t expected_move_count = 7; 
     assert(move_list.size() == expected_move_count);
 
     std::cout << "Test passed.\n\n";
@@ -451,13 +451,11 @@ void testBishops(){
 
 int main() {
     
-    //Need to test with 2 rooks
+    runOneRookTests();
 
-    // runOneRookTests();
+    runAllLegalMoveTests();
 
-    // runAllLegalMoveTests();
-
-    // testTwoRooksTwoKings();
+    testTwoRooksTwoKings();
     
     testBishops();
     

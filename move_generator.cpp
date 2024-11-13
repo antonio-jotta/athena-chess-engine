@@ -13,7 +13,7 @@ void MoveGenerator::generateAllLegalMoves(const Board& board, std::vector<Move>&
     // Generate pseudolegal moves
     std::vector<Move> pseudolegal_moves;
     generateAllMoves(board, pseudolegal_moves);
-
+    
     // For each move, check if it's legal
     for (const Move& move : pseudolegal_moves) {
         // Make a copy of the board
@@ -21,7 +21,8 @@ void MoveGenerator::generateAllLegalMoves(const Board& board, std::vector<Move>&
 
         // Make the move on the copy, do not switch sides
         board_copy.makeMove(move, false);
-
+        // std::cout << "Move " << squareToAlgebraic(move.from_square)<< " -> " << squareToAlgebraic(move.to_square) << "\n";
+        
         // Check if the king is in check after the move
         if (!isKingInCheck(board_copy, board.side)) {
             // Move is legal, add to move_list
@@ -130,9 +131,8 @@ void MoveGenerator::generateKingMoves(const Board& board, std::vector<Move>& mov
     int opponent_side = (side == WHITE) ? BLACK : WHITE;
     int king_piece = (side == WHITE) ? WHITE_KING : BLACK_KING;
     U64 king = board.bitboards[king_piece];
-
     int king_square = bitscanForward(king);
-    clear_bit(king, king_square);
+    
     while(king){
         const int directions[8] = {NORTH, SOUTH, EAST, WEST, NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
             // Generate moves in all directions
@@ -162,6 +162,7 @@ void MoveGenerator::generateKingMoves(const Board& board, std::vector<Move>& mov
                 move_list.emplace_back(king_square, to_square, king_piece, NO_PIECE, NO_PIECE, flags);
             }
         }
+        clear_bit(king, king_square);
     }
 }
 
@@ -220,11 +221,48 @@ bool MoveGenerator::isKingInCheck(const Board& board, int side) {
     // Check for attacks from pawns, knights, bishops, rooks, queens, and the opponent's king
     //if (isSquareAttackedByPawn(board, king_square, opponent_side)) return true;
     //if (isSquareAttackedByKnight(board, king_square, opponent_side)) return true;
-    //if (isSquareAttackedByBishopOrQueen(board, king_square, opponent_side)) return true;
+    if (isSquareAttackedByBishop(board, king_square, opponent_side)) return true;
     if (isSquareAttackedByRook(board, king_square, opponent_side)) return true;
     if (isSquareAttackedByKing(board, king_square, opponent_side)) return true;
 
     // No attacks on the king
+    return false;
+}
+
+bool MoveGenerator::isSquareAttackedByBishop(const Board& board, int square, int opponent_side) {
+    U64 bishops = board.bitboards[(opponent_side == WHITE) ? WHITE_BISHOP : BLACK_BISHOP];
+    U64 pieces = bishops;
+
+    while (pieces) {
+        int piece_square = bitscanForward(pieces);
+        clear_bit(pieces, piece_square);
+
+        // Generate rook attacks inline
+        const int directions[4] = {NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
+        for (int dir = 0; dir < 4; ++dir) {
+            int to_square = piece_square;
+
+            while (true) {
+                to_square += directions[dir];
+                if (to_square < 0 || to_square >= 64 || isBoundaryCrossed(piece_square, to_square, directions[dir])) {
+                    break;
+                }
+
+                if (get_bit(board.occupancies[BOTH], to_square)) {
+                    if (to_square == square) {
+                        return true; // Target square is attacked
+                    }
+                    break; // Blocked by other piece
+                }
+
+                if (to_square == square) {
+                    return true; // Target square is attacked
+                }
+            }
+        }
+    }
+
+    // No attacks found
     return false;
 }
 
