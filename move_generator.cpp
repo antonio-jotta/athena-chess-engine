@@ -6,7 +6,7 @@ void MoveGenerator::generateAllMoves(const Board& board, std::vector<Move>& move
     // generateBishopMoves(board, move_list);
     generateRookMoves(board, move_list);
     // generateQueenMoves(board, move_list);
-    // generateKingMoves(board, move_list);
+    generateKingMoves(board, move_list);
 }
 
 void MoveGenerator::generateAllLegalMoves(const Board& board, std::vector<Move>& move_list) {
@@ -28,9 +28,9 @@ void MoveGenerator::generateAllLegalMoves(const Board& board, std::vector<Move>&
             move_list.push_back(move);
         }else {
             // Debugging output
-            std::cout << "Move " << squareToAlgebraic(move.from_square)
-                      << " -> " << squareToAlgebraic(move.to_square)
-                      << " is illegal; king is in check after this move.\n";
+            // std::cout << "Move " << squareToAlgebraic(move.from_square)
+            //           << " -> " << squareToAlgebraic(move.to_square)
+            //           << " is illegal; king is in check after this move.\n";
         }
     }
 }
@@ -46,8 +46,8 @@ void MoveGenerator::generateRookMoves(const Board& board, std::vector<Move>& mov
     int rook_piece = (side == WHITE) ? WHITE_ROOK : BLACK_ROOK;
     U64 rooks = board.bitboards[rook_piece];
 
-    // Define the direction offsets for the rook (right, left, up, down)
-    const int directions[4] = { +1, -1, +8, -8 };
+    // Define the direction offsets for the rook 
+    const int directions[4] = {NORTH, SOUTH, EAST, WEST}; 
 
     // Loop through each rook
     while (rooks) {
@@ -68,6 +68,45 @@ void MoveGenerator::generateRookMoves(const Board& board, std::vector<Move>& mov
             );
         }
     }
+}
+
+void MoveGenerator::generateKingMoves(const Board& board, std::vector<Move>& move_list){
+    int side = board.side;
+    int opponent_side = (side == WHITE) ? BLACK : WHITE;
+    int king_piece = (side == WHITE) ? WHITE_KING : BLACK_KING;
+    U64 king = board.bitboards[king_piece];
+
+    int king_square = bitscanForward(king);
+    clear_bit(king, king_square);
+
+    const int directions[8] = {NORTH, SOUTH, EAST, WEST, NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
+            // Generate moves in all directions
+        for (int dir = 0; dir < 8; ++dir) {
+            int direction_offset = directions[dir];
+            int to_square = king_square + direction_offset;
+            if (to_square < 0 || to_square >= 64 || isBoundaryCrossed(king_square, to_square, direction_offset)) {
+                std::cout << "Boundary crossed at " << squareToAlgebraic(to_square) << "\n";
+            continue;
+            }
+            // Check if square is occupied by a friendly piece
+            if (get_bit(board.occupancies[side], to_square)) {
+                //std::cout << "Blocked by friendly piece at " << squareToAlgebraic(to_square) << "\n";
+                continue;
+            }
+            int captured_piece = NO_PIECE;
+            uint8_t flags = FLAG_NONE;
+
+            // Check if occupied by an opponent's piece
+            if (get_bit(board.occupancies[opponent_side], to_square)) {
+                captured_piece = getPieceOnSquare(board, to_square, opponent_side);
+                flags |= FLAG_CAPTURE;
+                move_list.emplace_back(king_square, to_square, king_piece, captured_piece, NO_PIECE, flags);
+                //std::cout << "Captured opponent piece at " << squareToAlgebraic(to_square) << "\n";
+                continue;
+            } else {
+                move_list.emplace_back(king_square, to_square, king_piece, NO_PIECE, NO_PIECE, flags);
+            }
+        }
 }
 
 
@@ -125,17 +164,16 @@ bool MoveGenerator::isKingInCheck(const Board& board, int side) {
     //if (isSquareAttackedByPawn(board, king_square, opponent_side)) return true;
     //if (isSquareAttackedByKnight(board, king_square, opponent_side)) return true;
     //if (isSquareAttackedByBishopOrQueen(board, king_square, opponent_side)) return true;
-    if (isSquareAttackedByRookOrQueen(board, king_square, opponent_side)) return true;
-    //if (isSquareAttackedByKing(board, king_square, opponent_side)) return true;
+    if (isSquareAttackedByRook(board, king_square, opponent_side)) return true;
+    if (isSquareAttackedByKing(board, king_square, opponent_side)) return true;
 
     // No attacks on the king
     return false;
 }
 
-bool MoveGenerator::isSquareAttackedByRookOrQueen(const Board& board, int square, int opponent_side) {
+bool MoveGenerator::isSquareAttackedByRook(const Board& board, int square, int opponent_side) {
     U64 rooks = board.bitboards[(opponent_side == WHITE) ? WHITE_ROOK : BLACK_ROOK];
-    U64 queens = board.bitboards[(opponent_side == WHITE) ? WHITE_QUEEN : BLACK_QUEEN];
-    U64 pieces = rooks | queens;
+    U64 pieces = rooks;
 
     while (pieces) {
         int piece_square = bitscanForward(pieces);
@@ -169,6 +207,36 @@ bool MoveGenerator::isSquareAttackedByRookOrQueen(const Board& board, int square
     // No attacks found
     return false;
 }
+
+bool MoveGenerator::isSquareAttackedByKing(const Board& board, int square, int opponent_side){
+    U64 kings = board.bitboards[(opponent_side == WHITE) ? WHITE_KING : BLACK_KING];
+
+    while(kings){
+        int piece_square = bitscanForward(kings);
+        clear_bit(kings, piece_square);
+        const int directions[8] = {NORTH, SOUTH, EAST, WEST, NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
+        for(int dir = 0; dir < 8; ++dir){
+            int to_square = piece_square;
+            to_square += directions[dir];
+            // std::cout << "Checking square: " << squareToAlgebraic(to_square) << "\n";
+            if (to_square < 0 || to_square >= 64 || isBoundaryCrossed(piece_square, to_square, directions[dir])) {
+                break;
+            }
+            if (get_bit(board.occupancies[BOTH], to_square)) {
+                    if (to_square == square) {
+                        return true; // Target square is attacked
+                    }
+                    break; // Blocked by other piece
+                }
+
+                if (to_square == square) {
+                    return true; // Target square is attacked
+                }
+        }
+    }
+    return false;
+}
+
 
 bool MoveGenerator::isBoundaryCrossed(int from_square, int to_square, int direction_offset) {
     if (direction_offset == EAST || direction_offset == WEST) {

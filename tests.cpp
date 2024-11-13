@@ -157,7 +157,7 @@ void testRookMovesEdgeOfBoard() {
 
 
 
-void runAllTests() {
+void runOneRookTests() {
     testRookMovesEmptyBoard();
     testRookMovesBlockedByFriendly();
     testRookMovesCaptureOpponent();
@@ -166,7 +166,7 @@ void runAllTests() {
 }
 
 
-void testRookLegalMovesKingSafe() {
+void testLegalMovesKingSafe() {
     // Initialize board
     Board board;
     board.resetBoard();
@@ -190,19 +190,19 @@ void testRookLegalMovesKingSafe() {
     moveGenerator.generateAllLegalMoves(board, move_list);
 
     // Expected moves: All rook moves from D4
-    std::cout << "Test: Rook Legal Moves When King Is Safe\n";
+    std::cout << "Test: Legal Moves When King Is Safe\n";
     std::cout << "Generated moves (" << move_list.size() << "):\n";
     for (const Move& move : move_list) {
         std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << "\n";
     }
-    size_t expected_move_count = 14;
+    size_t expected_move_count = 19;
     assert(move_list.size() == expected_move_count);
 
 
     std::cout << "Test passed.\n\n";
 }
 
-void testRookLegalMovesKingInCheckBlock() {
+void testLegalMovesKingInCheckBlock() {
     // Initialize board
     Board board;
     board.resetBoard();
@@ -236,14 +236,14 @@ void testRookLegalMovesKingInCheckBlock() {
         std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << "\n";
     }
     
-    size_t expected_move_count = 6; // E2->E3, E2->E4, E2->E5, E2->E6, E2->E7, e2->E8
+    size_t expected_move_count = 10; 
     assert(move_list.size() == expected_move_count);
 
 
     std::cout << "Test passed.\n\n";
 }
 
-void testRookLegalMovesKingInCheckCapture() {
+void testLegalMovesKingInCheckCapture() {
     // Initialize board
     Board board;
     board.resetBoard();
@@ -281,13 +281,13 @@ void testRookLegalMovesKingInCheckCapture() {
     }
 
 
-    size_t expected_move_count = 1; // Only the capturing move
+    size_t expected_move_count = 5; // Capturing and moving the king
     assert(move_list.size() == expected_move_count);
 
     std::cout << "Test passed.\n\n";
 }
 
-void testRookLegalMovesKingInCheckRookCannotHelp() {
+void testLegalMovesKingInCheckRookCannotHelp() {
     // Initialize board
     Board board;
     board.resetBoard();
@@ -312,29 +312,113 @@ void testRookLegalMovesKingInCheckRookCannotHelp() {
     std::vector<Move> move_list;
     moveGenerator.generateAllLegalMoves(board, move_list);
 
-    std::cout << "Test: Rook Legal Moves When King Is in Check and Rook Cannot Help\n";
+    std::cout << "Test: Legal Moves When King Is in Check and Rook Cannot Help\n";
     std::cout << "Generated moves (" << move_list.size() << "):\n";
     for (const Move& move : move_list) {
         std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << "\n";
     }
 
     // Expected moves:
-    size_t expected_move_count = 0; // No rook moves
+    size_t expected_move_count = 4; // No rook moves
     assert(move_list.size() == expected_move_count);
 
     std::cout << "Test passed.\n\n";
 }
 
 
-void runAllLegalMoveTests() {
-    testRookLegalMovesKingSafe();
-    testRookLegalMovesKingInCheckBlock();
-    testRookLegalMovesKingInCheckCapture();
-    testRookLegalMovesKingInCheckRookCannotHelp();
+void testIsSquareAttackedByKing() {
+    // Initialize board
+    Board board;
+    board.resetBoard();
+
+    // Clear the board
+    for (int i = 0; i < 12; ++i) {
+        board.bitboards[i] = 0ULL;
+    }
+    board.updateOccupancies();
+
+    set_bit(board.bitboards[WHITE_KING], D3);
+    set_bit(board.bitboards[BLACK_KING], D5);
+    board.side = WHITE;
+    board.updateOccupancies();
+
+    // Generate legal moves
+    MoveGenerator moveGenerator;
+    std::vector<Move> move_list;
+    moveGenerator.generateAllLegalMoves(board, move_list);
+
+    std::cout << "Test: Is square attacked by king\n";
+    std::cout << "Generated moves (" << move_list.size() << "):\n";
+    for (const Move& move : move_list) {
+        std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << "\n";
+    }
+
+    // Expected moves:
+    size_t expected_move_count = 5; 
+    assert(move_list.size() == expected_move_count);
+
+    std::cout << "Test passed.\n\n";
 }
 
+void runAllLegalMoveTests() {
+    testLegalMovesKingSafe();
+    testLegalMovesKingInCheckBlock();
+    testLegalMovesKingInCheckCapture();
+    testLegalMovesKingInCheckRookCannotHelp();
+    testIsSquareAttackedByKing();
+}
+
+
+void testTwoRooksTwoKings(){
+    // Initialize board
+    Board board;
+    board.resetBoard();
+
+    // Clear the board
+    for (int i = 0; i < 12; ++i) {
+        board.bitboards[i] = 0ULL;
+    }
+    board.updateOccupancies();
+
+    set_bit(board.bitboards[WHITE_KING], E2);
+    set_bit(board.bitboards[WHITE_ROOK], D4);
+    set_bit(board.bitboards[WHITE_ROOK], G2);
+    set_bit(board.bitboards[BLACK_KING], C7);
+    set_bit(board.bitboards[BLACK_ROOK], D7);
+    set_bit(board.bitboards[BLACK_ROOK], B6);
+
+    board.side = WHITE;
+    board.updateOccupancies();
+
+    // Generate legal moves
+    MoveGenerator moveGenerator;
+    std::vector<Move> move_list;
+    moveGenerator.generateAllLegalMoves(board, move_list);
+
+    std::cout << "Test: Two Rooks Two Kings\n";
+    std::cout << "Generated moves (" << move_list.size() << "):\n";
+    for (const Move& move : move_list) {
+        std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << "\n";
+    }
+
+    // Expected moves:
+    size_t expected_move_count = 30; 
+    assert(move_list.size() == expected_move_count);
+
+    std::cout << "Test passed.\n\n";
+}
+
+
+
 int main() {
-    runAllTests();
+    
+    //Need to test with 2 rooks
+
+    runOneRookTests();
+
     runAllLegalMoveTests();
+
+    testTwoRooksTwoKings();
+
     return 0;
 }
