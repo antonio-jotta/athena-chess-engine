@@ -5,7 +5,7 @@ void MoveGenerator::generateAllMoves(const Board& board, std::vector<Move>& move
     // generateKnightMoves(board, move_list);
     generateBishopMoves(board, move_list);
     generateRookMoves(board, move_list);
-    // generateQueenMoves(board, move_list);
+    generateQueenMoves(board, move_list);
     generateKingMoves(board, move_list);
 }
 
@@ -46,13 +46,13 @@ void MoveGenerator::generateBishopMoves(const Board& board, std::vector<Move>& m
     int bishop_piece = (side == WHITE) ? WHITE_BISHOP : BLACK_BISHOP;
     U64 bishops = board.bitboards[bishop_piece];
 
-    // Define the direction offsets for the rook 
-    const int directions[4] = {NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
-
     // Loop through each rook
     while (bishops) {
         int bishop_square = bitscanForward(bishops);
         clear_bit(bishops, bishop_square);
+
+        // Direction offsets for the bishop 
+        const int directions[4] = {NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
 
         // Generate moves in all four directions
         for (int dir = 0; dir < 4; ++dir) {
@@ -76,14 +76,12 @@ void MoveGenerator::generateRookMoves(const Board& board, std::vector<Move>& mov
     int rook_piece = (side == WHITE) ? WHITE_ROOK : BLACK_ROOK;
     U64 rooks = board.bitboards[rook_piece];
 
-    // Define the direction offsets for the rook 
-    const int directions[4] = {NORTH, SOUTH, EAST, WEST}; 
-
     // Loop through each rook
     while (rooks) {
         int rook_square = bitscanForward(rooks);
         clear_bit(rooks, rook_square);
-
+        // Direction offsets for the rook 
+        const int directions[4] = {NORTH, SOUTH, EAST, WEST}; 
         // Generate moves in all four directions
         for (int dir = 0; dir < 4; ++dir) {
             int direction_offset = directions[dir];
@@ -95,6 +93,33 @@ void MoveGenerator::generateRookMoves(const Board& board, std::vector<Move>& mov
                 side,
                 opponent_side,
                 rook_piece
+            );
+        }
+    }
+}
+
+void MoveGenerator::generateQueenMoves(const Board& board, std::vector<Move>& move_list){
+    int side = board.side;
+    int opponent_side = (side == WHITE) ? BLACK : WHITE;
+    int queen_piece = (side == WHITE) ? WHITE_QUEEN : BLACK_QUEEN;
+    U64 queens = board.bitboards[queen_piece];
+
+    // Loop through each queen
+    while(queens){
+        // Direction offsets for the queen
+        const int directions[8] = {NORTH, SOUTH, EAST, WEST, NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
+        int queen_square = bitscanForward(queens);
+        clear_bit(queens, queen_square);
+        for (int dir = 0; dir < 8; ++dir) {
+            int direction_offset = directions[dir];
+            generateSlidingMovesInDirection(
+                board,
+                move_list,
+                queen_square,
+                direction_offset,
+                side,
+                opponent_side,
+                queen_piece
             );
         }
     }
