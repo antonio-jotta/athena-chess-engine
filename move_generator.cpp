@@ -2,7 +2,7 @@
 
 void MoveGenerator::generateAllMoves(const Board& board, std::vector<Move>& move_list){
     // generatePawnMoves(board, move_list);
-    // generateKnightMoves(board, move_list);
+    generateKnightMoves(board, move_list);
     generateBishopMoves(board, move_list);
     generateRookMoves(board, move_list);
     generateQueenMoves(board, move_list);
@@ -40,6 +40,58 @@ void MoveGenerator::generateAllLegalMoves(const Board& board, std::vector<Move>&
 // void MoveGenerator::generatePawnMoves(const Board& board, std::vector<Move>& move_list){
     
 // }
+
+void MoveGenerator::generateKnightMoves(const Board& board, std::vector<Move>& move_list) {
+    int side = board.side;
+    int opponent_side = (side == WHITE) ? BLACK : WHITE;
+    int knight_piece = (side == WHITE) ? WHITE_KNIGHT : BLACK_KNIGHT;
+    U64 knights = board.bitboards[knight_piece];
+
+    // Loop through each knight
+    while (knights) {
+        int knight_square = bitscanForward(knights);
+        clear_bit(knights, knight_square);
+
+        // Possible knight move offsets
+        const int knight_offsets[8] = {
+            17, 15, 10, 6, -6, -10, -15, -17
+        };
+
+        // Generate moves for the knight
+        for (int i = 0; i < 8; ++i) {
+            int to_square = knight_square + knight_offsets[i];
+
+            // Check if the destination square is within the board bounds
+            if (to_square >= 0 && to_square < 64) {
+                // Check for boundary crossing to prevent wrap-around
+                if (!isKnightMoveBoundaryCrossed(knight_square, to_square)) {
+                    // Check if the destination square is occupied by a friendly piece
+                    if (!get_bit(board.occupancies[side], to_square)) {
+                        int captured_piece = NO_PIECE;
+                        uint8_t flags = FLAG_NONE;
+
+                        // Check if the destination square is occupied by an opponent piece
+                        if (get_bit(board.occupancies[opponent_side], to_square)) {
+                            captured_piece = getPieceOnSquare(board, to_square, opponent_side);
+                            flags |= FLAG_CAPTURE;
+                        }
+
+                        // Add the move to the move list
+                        move_list.emplace_back(
+                            knight_square,
+                            to_square,
+                            knight_piece,
+                            captured_piece,
+                            NO_PIECE, // promoted_piece (not applicable for knights)
+                            flags
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 void MoveGenerator::generateBishopMoves(const Board& board, std::vector<Move>& move_list) {
     int side = board.side;
@@ -223,11 +275,47 @@ bool MoveGenerator::isKingInCheck(const Board& board, int side) {
     //if (isSquareAttackedByKnight(board, king_square, opponent_side)) return true;
     if (isSquareAttackedByBishop(board, king_square, opponent_side)) return true;
     if (isSquareAttackedByRook(board, king_square, opponent_side)) return true;
+    if (isSquareAttackedByQueen(board, king_square, opponent_side)) return true;
     if (isSquareAttackedByKing(board, king_square, opponent_side)) return true;
 
     // No attacks on the king
     return false;
 }
+
+bool MoveGenerator::isSquareAttackedByKnight(const Board& board, int square, int opponent_side) {
+    // Get the bitboard of opponent's knights
+    U64 knights = board.bitboards[(opponent_side == WHITE) ? WHITE_KNIGHT : BLACK_KNIGHT];
+    U64 pieces = knights;
+
+    // Loop through each knight
+    while (pieces) {
+        int knight_square = bitscanForward(pieces);
+        clear_bit(pieces, knight_square);
+
+        // Possible knight move offsets
+        const int knight_offsets[8] = {17, 15, 10, 6, -6, -10, -15, -17};
+
+        // Generate moves for the knight
+        for (int i = 0; i < 8; ++i) {
+            int to_square = knight_square + knight_offsets[i];
+
+            // Check if the destination square is within the board bounds
+            if (to_square >= 0 && to_square < 64) {
+                // Check for boundary crossing to prevent wrap-around
+                if (!isKnightMoveBoundaryCrossed(knight_square, to_square)) {
+                    // Check if the knight attacks the target square
+                    if (to_square == square) {
+                        return true; // Target square is attacked by a knight
+                    }
+                }
+            }
+        }
+    }
+
+    // No attacks found
+    return false;
+}
+
 
 bool MoveGenerator::isSquareAttackedByBishop(const Board& board, int square, int opponent_side) {
     U64 bishops = board.bitboards[(opponent_side == WHITE) ? WHITE_BISHOP : BLACK_BISHOP];
@@ -303,6 +391,43 @@ bool MoveGenerator::isSquareAttackedByRook(const Board& board, int square, int o
     return false;
 }
 
+bool MoveGenerator::isSquareAttackedByQueen(const Board& board, int square, int opponent_side) {
+    U64 queens = board.bitboards[(opponent_side == WHITE) ? WHITE_QUEEN : BLACK_QUEEN];
+    U64 pieces = queens;
+
+    while (pieces) {
+        int piece_square = bitscanForward(pieces);
+        clear_bit(pieces, piece_square);
+
+        // Generate rook attacks inline
+        const int directions[8] = {NORTH, SOUTH, EAST, WEST, NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
+        for (int dir = 0; dir < 8; ++dir) {
+            int to_square = piece_square;
+
+            while (true) {
+                to_square += directions[dir];
+                if (to_square < 0 || to_square >= 64 || isBoundaryCrossed(piece_square, to_square, directions[dir])) {
+                    break;
+                }
+
+                if (get_bit(board.occupancies[BOTH], to_square)) {
+                    if (to_square == square) {
+                        return true; // Target square is attacked
+                    }
+                    break; // Blocked by other piece
+                }
+
+                if (to_square == square) {
+                    return true; // Target square is attacked
+                }
+            }
+        }
+    }
+
+    // No attacks found
+    return false;
+}
+
 bool MoveGenerator::isSquareAttackedByKing(const Board& board, int square, int opponent_side){
     U64 kings = board.bitboards[(opponent_side == WHITE) ? WHITE_KING : BLACK_KING];
 
@@ -346,6 +471,21 @@ bool MoveGenerator::isBoundaryCrossed(int from_square, int to_square, int direct
     }
     // Vertical moves (N/S) don't cross boundaries
     return false;
+}
+
+bool MoveGenerator::isKnightMoveBoundaryCrossed(int from_square, int to_square) {
+    int from_file = from_square % 8;
+    int to_file = to_square % 8;
+    int file_diff = std::abs(from_file - to_file);
+    int rank_diff = std::abs((from_square / 8) - (to_square / 8));
+
+    // A valid knight move should have file and rank differences of (1, 2) or (2, 1)
+    if ((file_diff == 1 && rank_diff == 2) || (file_diff == 2 && rank_diff == 1)) {
+        return false;
+    }
+
+    // If not, the move crosses the boundary
+    return true;
 }
 
 

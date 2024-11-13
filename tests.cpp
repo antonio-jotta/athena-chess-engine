@@ -420,8 +420,11 @@ void testBishops(){
     board.updateOccupancies();
 
     set_bit(board.bitboards[WHITE_BISHOP], F6);
-    set_bit(board.bitboards[WHITE_KING], D2);
-    set_bit(board.bitboards[BLACK_BISHOP], A5);
+    set_bit(board.bitboards[WHITE_BISHOP], F3);
+    set_bit(board.bitboards[WHITE_KING], B1);
+    set_bit(board.bitboards[BLACK_BISHOP],  B7);
+    set_bit(board.bitboards[BLACK_QUEEN], G2);
+
     board.side = WHITE;
     board.updateOccupancies();
 
@@ -440,13 +443,46 @@ void testBishops(){
     }
 
     // Expected moves:
-    size_t expected_move_count = 7; 
+    size_t expected_move_count = 9 + 11 + 2; 
     assert(move_list.size() == expected_move_count);
 
     std::cout << "Test passed.\n\n";
 }
 
 
+void testKnightMoves() {
+    // Initialize board
+    Board board;
+    board.resetBoard();
+
+    // Clear the board
+    for (int i = 0; i < 12; ++i) {
+        board.bitboards[i] = 0ULL;
+    }
+    board.updateOccupancies();
+
+    // Place a white knight at D4 (square 27)
+    set_bit(board.bitboards[WHITE_KNIGHT], 27);
+    board.side = WHITE;
+    board.updateOccupancies();
+
+    // Generate moves
+    MoveGenerator moveGenerator;
+    std::vector<Move> move_list;
+    moveGenerator.generateAllLegalMoves(board, move_list);
+
+    // Print the moves
+    std::cout << "Knight moves from d4:\n";
+    for (const Move& move : move_list) {
+        std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << "\n";
+    }
+
+    // Expected moves: 8 possible moves (may be fewer if on the edge)
+    size_t expected_move_count = 8;
+    assert(move_list.size() == expected_move_count);
+
+
+}
 
 
 int main() {
@@ -458,6 +494,8 @@ int main() {
     testTwoRooksTwoKings();
     
     testBishops();
+
+    testKnightMoves();
     
     return 0;
 }
