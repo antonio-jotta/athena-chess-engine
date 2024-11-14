@@ -55,11 +55,17 @@ void Board::makeMove(const Move& move, bool switch_side) {
     // Update castling rights
     updateCastlingRights(move);
 
+    // Increment the move number if Black has just moved
+    if (side == BLACK) {
+        move_number++;
+    }
+
     // Update side to move
     if (switch_side) {
         side = (side == WHITE) ? BLACK : WHITE;
     }
 }
+
 
 void Board::resetBoard() {
     // Clear all bitboards

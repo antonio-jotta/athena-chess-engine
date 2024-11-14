@@ -70,7 +70,7 @@ class Board{
 
         // Side to move
         Side side;
-
+        int move_number = 1;
         // En passant square (-1 if not available)
         int en_passant;
 
