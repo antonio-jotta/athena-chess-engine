@@ -84,6 +84,7 @@ class Board{
         void updateOccupancies();
         void updateCastlingRights(const Move& move);
         void makeMove(const Move& move, bool switch_side = true);
+        std::string getCastlingRightsString() const;
 };
 
 // Bit manipulation functions

@@ -404,12 +404,18 @@ void MoveGenerator::generateCastlingMoves(const Board& board, std::vector<Move>&
 
 bool MoveGenerator::canCastleKingSide(const Board& board, int side) {
     if (side == WHITE) {
+        // Check castling rights
         if (!(board.castling_rights & CASTLE_WHITE_KING_SIDE)) return false;
+        // Check for empty squares between king and rook
         if (get_bit(board.occupancies[BOTH], F1) || get_bit(board.occupancies[BOTH], G1)) return false;
+        // **Check if rook is on H1**
+        if (!get_bit(board.bitboards[WHITE_ROOK], H1)) return false;
         return true;
     } else {
         if (!(board.castling_rights & CASTLE_BLACK_KING_SIDE)) return false;
         if (get_bit(board.occupancies[BOTH], F8) || get_bit(board.occupancies[BOTH], G8)) return false;
+        // **Check if rook is on H8**
+        if (!get_bit(board.bitboards[BLACK_ROOK], H8)) return false;
         return true;
     }
 }
@@ -418,13 +424,18 @@ bool MoveGenerator::canCastleQueenSide(const Board& board, int side) {
     if (side == WHITE) {
         if (!(board.castling_rights & CASTLE_WHITE_QUEEN_SIDE)) return false;
         if (get_bit(board.occupancies[BOTH], B1) || get_bit(board.occupancies[BOTH], C1) || get_bit(board.occupancies[BOTH], D1)) return false;
+        // **Check if rook is on A1**
+        if (!get_bit(board.bitboards[WHITE_ROOK], A1)) return false;
         return true;
     } else {
         if (!(board.castling_rights & CASTLE_BLACK_QUEEN_SIDE)) return false;
         if (get_bit(board.occupancies[BOTH], B8) || get_bit(board.occupancies[BOTH], C8) || get_bit(board.occupancies[BOTH], D8)) return false;
+        // **Check if rook is on A8**
+        if (!get_bit(board.bitboards[BLACK_ROOK], A8)) return false;
         return true;
     }
 }
+
 
 // Check if any of the squares between the king and the rook are attacked
 bool MoveGenerator::isSafeToCastle(const Board& board, int king_square, int side, const std::string& castling_type) {

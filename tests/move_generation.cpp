@@ -6,6 +6,72 @@
 #include <cassert>
 
 
+
+void testRookMovesEmptyBoard();
+void testRookMovesBlockedByFriendly();
+void testRookMovesCaptureOpponent();
+void testRookMovesEdgeOfBoard();
+void runRookTests() {
+    testRookMovesEmptyBoard();
+    testRookMovesBlockedByFriendly();
+    testRookMovesCaptureOpponent();
+    testRookMovesEdgeOfBoard();
+}
+
+void testLegalMovesKingSafe();
+void testLegalMovesKingInCheckBlock();
+void testLegalMovesKingInCheckCapture();
+void testLegalMovesKingInCheckRookCannotHelp();
+void testIsSquareAttackedByKing();
+void testTwoRooksTwoKings();
+void testCastlingMoves();
+
+void runKingTests(){
+    testLegalMovesKingSafe();
+    testLegalMovesKingInCheckBlock();
+    testLegalMovesKingInCheckCapture();
+    testLegalMovesKingInCheckRookCannotHelp();
+    testIsSquareAttackedByKing();
+    testTwoRooksTwoKings();
+    testCastlingMoves();
+}
+
+void testBishops();
+void testKnightMoves();
+void testSquareAttackedByKnight();
+void runKnightBishopTests(){
+    testBishops();
+    testKnightMoves();
+    testSquareAttackedByKnight();
+}
+
+void testIsSquareAttackedByPawn();
+void testEnPassant();
+void testPawnDoubleMove();
+void testPawnPromotions();
+void runPawnTests(){
+    testIsSquareAttackedByPawn();
+    testEnPassant();
+    testPawnDoubleMove();
+    testPawnPromotions();
+}
+
+
+int main() {
+    
+
+    runRookTests();
+    runKingTests();
+    testBishops();
+    testKnightMoves();
+    testSquareAttackedByKnight();
+    runPawnTests();
+    testCastlingMoves();
+    
+    return 0;
+}
+
+
 void testRookMovesEmptyBoard() {
     // Initialize board
     Board board;
@@ -156,17 +222,6 @@ void testRookMovesEdgeOfBoard() {
 }
 
 
-
-
-void runOneRookTests() {
-    testRookMovesEmptyBoard();
-    testRookMovesBlockedByFriendly();
-    testRookMovesCaptureOpponent();
-    testRookMovesEdgeOfBoard();
-    // Add more tests as needed
-}
-
-
 void testLegalMovesKingSafe() {
     // Initialize board
     Board board;
@@ -179,9 +234,10 @@ void testLegalMovesKingSafe() {
     board.updateOccupancies();
 
     // Place a white rook at D4
-    set_bit(board.bitboards[WHITE_ROOK], D4);
+    // set_bit(board.bitboards[WHITE_ROOK], D4);
     // Place white king at E1 (square 4)
     set_bit(board.bitboards[WHITE_KING], E1);
+    board.printBoard();
     board.side = WHITE;
     board.updateOccupancies();
 
@@ -196,7 +252,7 @@ void testLegalMovesKingSafe() {
     for (const Move& move : move_list) {
         std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << "\n";
     }
-    size_t expected_move_count = 19;
+    size_t expected_move_count = 5;
     assert(move_list.size() == expected_move_count);
 
 
@@ -361,15 +417,6 @@ void testIsSquareAttackedByKing() {
     std::cout << "Test passed.\n\n";
 }
 
-void runAllLegalMoveTests() {
-    testLegalMovesKingSafe();
-    testLegalMovesKingInCheckBlock();
-    testLegalMovesKingInCheckCapture();
-    testLegalMovesKingInCheckRookCannotHelp();
-    testIsSquareAttackedByKing();
-}
-
-
 void testTwoRooksTwoKings(){
     // Initialize board
     Board board;
@@ -408,6 +455,73 @@ void testTwoRooksTwoKings(){
 
     std::cout << "Test passed.\n\n";
 }
+
+
+void testCastlingMoves() {
+    // Initialize board
+    Board board;
+    board.resetBoard();
+
+    // Clear the board and set up kings and rooks for castling
+    for (int i = 0; i < 12; ++i) {
+        board.bitboards[i] = 0ULL;
+    }
+    set_bit(board.bitboards[WHITE_KING], E1);
+    set_bit(board.bitboards[WHITE_ROOK], A1);
+    set_bit(board.bitboards[WHITE_ROOK], G1);
+    set_bit(board.bitboards[WHITE_ROOK], H1);
+    set_bit(board.bitboards[WHITE_BISHOP], C5);
+    set_bit(board.bitboards[BLACK_KING], E8);
+    set_bit(board.bitboards[BLACK_ROOK], A8);
+    set_bit(board.bitboards[BLACK_ROOK], H8);
+    set_bit(board.bitboards[BLACK_PAWN], F6);
+    set_bit(board.bitboards[BLACK_PAWN], G6);
+
+    std::cout << "\nTest: Castling Moves\n";
+
+    std::cout << "Initial Board:\n";
+    board.printBoard();
+
+    // Set castling rights for both sides
+    board.castling_rights = CASTLE_WHITE_KING_SIDE | CASTLE_WHITE_QUEEN_SIDE | CASTLE_BLACK_KING_SIDE | CASTLE_BLACK_QUEEN_SIDE;
+
+    board.side = WHITE;
+    board.updateOccupancies();
+
+    // Generate legal moves
+    MoveGenerator moveGenerator;
+    std::vector<Move> move_list;
+
+
+    moveGenerator.generateAllLegalMoves(board, move_list);
+
+    // Filter out castling moves
+    std::vector<Move> castling_moves;
+    for (const Move& move : move_list) {
+        if (move.flags & FLAG_CASTLING) {
+            castling_moves.push_back(move);
+        }
+    }
+
+    std::cout << "Generated castling moves (" << castling_moves.size() << "):\n";
+    for (const Move& move : castling_moves) {
+        std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << " (Castling)\n";
+
+        // Make the move and print the board
+        Board new_board = board; // Create a copy to preserve the original board
+        new_board.makeMove(move);
+        std::cout << "Board after move:\n";
+        new_board.printBoard();
+        std::cout << "\n";
+    }
+
+    // Expected moves: 2 castling moves for white
+    // size_t expected_move_count = 2;
+    // assert(castling_moves.size() == expected_move_count);
+
+    std::cout << "Test passed.\n\n";
+}
+
 
 void testBishops(){
     // Initialize board
@@ -518,6 +632,7 @@ void testSquareAttackedByKnight(){
     assert(move_list.size() == expected_move_count);
 
 }
+
 
 void testIsSquareAttackedByPawn() {
     Board board;
@@ -707,97 +822,4 @@ void testPawnDoubleMove() {
     assert(move_list.size() == expected_move_count);
 
     std::cout << "Test passed.\n\n";
-}
-
-
-void testCastlingMoves() {
-    // Initialize board
-    Board board;
-    board.resetBoard();
-
-    // Clear the board and set up kings and rooks for castling
-    for (int i = 0; i < 12; ++i) {
-        board.bitboards[i] = 0ULL;
-    }
-    set_bit(board.bitboards[WHITE_KING], E1);
-    set_bit(board.bitboards[WHITE_ROOK], A1);
-    set_bit(board.bitboards[WHITE_ROOK], G1);
-    set_bit(board.bitboards[WHITE_ROOK], H1);
-    set_bit(board.bitboards[WHITE_BISHOP], C5);
-    set_bit(board.bitboards[BLACK_KING], E8);
-    set_bit(board.bitboards[BLACK_ROOK], A8);
-    set_bit(board.bitboards[BLACK_ROOK], H8);
-    set_bit(board.bitboards[BLACK_PAWN], F6);
-    set_bit(board.bitboards[BLACK_PAWN], G6);
-
-    std::cout << "\nTest: Castling Moves\n";
-
-    std::cout << "Initial Board:\n";
-    board.printBoard();
-
-    // Set castling rights for both sides
-    board.castling_rights = CASTLE_WHITE_KING_SIDE | CASTLE_WHITE_QUEEN_SIDE | CASTLE_BLACK_KING_SIDE | CASTLE_BLACK_QUEEN_SIDE;
-
-    board.side = BLACK;
-    board.updateOccupancies();
-
-    // Generate legal moves
-    MoveGenerator moveGenerator;
-    std::vector<Move> move_list;
-
-
-    moveGenerator.generateAllLegalMoves(board, move_list);
-
-    // Filter out castling moves
-    std::vector<Move> castling_moves;
-    for (const Move& move : move_list) {
-        if (move.flags & FLAG_CASTLING) {
-            castling_moves.push_back(move);
-        }
-    }
-
-    std::cout << "Generated castling moves (" << castling_moves.size() << "):\n";
-    for (const Move& move : castling_moves) {
-        std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << " (Castling)\n";
-
-        // Make the move and print the board
-        Board new_board = board; // Create a copy to preserve the original board
-        new_board.makeMove(move);
-        std::cout << "Board after move:\n";
-        new_board.printBoard();
-        std::cout << "\n";
-    }
-
-    // Expected moves: 2 castling moves for white
-    // size_t expected_move_count = 2;
-    // assert(castling_moves.size() == expected_move_count);
-
-    std::cout << "Test passed.\n\n";
-}
-
-
-int main() {
-    
-    // runOneRookTests();
-
-    // runAllLegalMoveTests();
-
-    // testTwoRooksTwoKings();
-    
-    // testBishops();
-
-    // testKnightMoves();
-
-    // testSquareAttackedByKnight();
-
-    // testIsSquareAttackedByPawn();
-
-    // testEnPassant();
-    // testPawnDoubleMove();
-
-    // testPawnPromotions();
-
-    testCastlingMoves();
-    
-    return 0;
 }

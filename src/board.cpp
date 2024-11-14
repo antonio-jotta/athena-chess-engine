@@ -174,8 +174,7 @@ void Board::printBoard() {
     std::cout << "\n   A B C D E F G H\n";
     std::cout << "Side to move: " << (side == WHITE ? "White\n" : "Black\n");
     std::cout << "En Passant: " << (en_passant != -1 ? std::to_string(en_passant) : "None") << "\n";
-    std::cout << "Castling: " << castling_rights << "\n";
-}
+    std::cout << "Castling: " << getCastlingRightsString() << "\n";}
 
 // Find the index of the least significant 1 bit in b (returns 0-based index)
 // Used for iteration in the bitboard
@@ -241,4 +240,15 @@ std::string pieceToString(int piece) {
         case NO_PIECE:     return "No Piece";
         default:           return "Unknown Piece";
     }
+}
+
+std::string Board::getCastlingRightsString() const {
+    std::string rights;
+    
+    if (castling_rights & CASTLE_WHITE_KING_SIDE) rights += "K";
+    if (castling_rights & CASTLE_WHITE_QUEEN_SIDE) rights += "Q";
+    if (castling_rights & CASTLE_BLACK_KING_SIDE) rights += "k";
+    if (castling_rights & CASTLE_BLACK_QUEEN_SIDE) rights += "q";
+    
+    return rights.empty() ? "None" : rights;
 }
