@@ -1,11 +1,13 @@
 #include "evaluation.h"
 #include "move_generator.h"
 
-const int PAWN_CENTER_CONTROL_BONUS = 10; // Adjust the factor as needed
+
+// ALL OF THESE ARE SUBJECT TO ADJUSTMENTS
+const int PAWN_CENTER_CONTROL_BONUS = 10; 
 const int PASSED_PAWN_BONUS[8] = {0, 5, 10, 20, 40, 80, 200, 0}; // Index by rank
-const int CONNECTED_PASSED_PAWN_BONUS = 30; // Adjust as needed
-const int DOUBLED_PAWN_PENALTY = -20; // Adjust the factor as needed
-const int ISOLATED_PAWN_PENALTY = -15; // Adjust as needed
+const int CONNECTED_PASSED_PAWN_BONUS = 30; 
+const int DOUBLED_PAWN_PENALTY = -20; 
+const int ISOLATED_PAWN_PENALTY = -15; 
 
 
 
@@ -37,9 +39,9 @@ int Evaluation::scorePawnStructure(const Board& board, int side) {
     U64 pawns = board.bitboards[side == WHITE ? WHITE_PAWN : BLACK_PAWN];
     int score = 0;
 
-    U64 tempPawns = pawns; // Copy of pawns to use in pop_lsb
+    U64 tempPawns = pawns; 
     while (tempPawns) {
-        int square = bitscanForward(tempPawns); // Remove LSB and get index
+        int square = bitscanForward(tempPawns); // get the index for the LSB
         int rank = square / 8;
 
         // Central Pawn Bonus
@@ -69,7 +71,7 @@ int Evaluation::scorePawnStructure(const Board& board, int side) {
                 score += DOUBLED_PAWN_PENALTY;
             }
         }
-        clear_bit(tempPawns, square);
+        clear_bit(tempPawns, square); // remove the LSB and continue the loop
     }
 
     return score;
@@ -77,7 +79,7 @@ int Evaluation::scorePawnStructure(const Board& board, int side) {
 
 
 bool Evaluation::isCentralSquare(int square) {
-    // Central squares: d4, d5, e4, e5 (for now)
+    // (for now): maybe in the future give slight bonus to C and F file?
     return (square == D4 || square == D5 || square == E4 || square == E5);
 }
 

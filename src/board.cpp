@@ -1,5 +1,9 @@
 #include "board.h"
 
+///////////////////////
+/// Board functions ///
+///////////////////////
+
 Board::Board() {
     resetBoard();
 }
@@ -183,9 +187,9 @@ void Board::printBoard() {
     std::cout << "Castling: " << getCastlingRightsString() << "\n";}
 
 
-#include "board.h"
-#include <sstream>
-#include <iostream>
+////////////////////////////////////////////////////
+// Helper functions for dealing with FEN notation //
+////////////////////////////////////////////////////
 
 void Board::loadFEN(const std::string& fen) {
     // Clear the board
@@ -329,6 +333,10 @@ std::string Board::generateFEN() const {
     return fen;
 }
 
+//////////////////////////////////////
+// Bit manipulations for the pieces //
+//////////////////////////////////////
+
 
 // Find the index of the least significant 1 bit in b (returns 0-based index)
 // Used for iteration in the bitboard
@@ -364,7 +372,11 @@ int countBits(U64 b) {
 }
 
 
-// Helper functions for prints
+/////////////////////////////////
+// Helper functions for prints //
+/////////////////////////////////
+
+
 std::string squareToAlgebraic(int square) {
     // Ensure square is within bounds
     if (square < 0 || square > 63) {

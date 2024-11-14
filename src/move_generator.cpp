@@ -10,7 +10,7 @@ void MoveGenerator::generateAllMoves(const Board& board, std::vector<Move>& move
 }
 
 void MoveGenerator::generateAllLegalMoves(const Board& board, std::vector<Move>& move_list) {
-    // Generate pseudolegal moves
+    // Generate all pseudolegal moves
     std::vector<Move> pseudolegal_moves;
     generateAllMoves(board, pseudolegal_moves);
     
@@ -27,12 +27,13 @@ void MoveGenerator::generateAllLegalMoves(const Board& board, std::vector<Move>&
         if (!isKingInCheck(board_copy, board.side)) {
             // Move is legal, add to move_list
             move_list.push_back(move);
-        }else {
-            // Debugging output
-            // std::cout << "Move " << squareToAlgebraic(move.from_square)
-            //           << " -> " << squareToAlgebraic(move.to_square)
-            //           << " is illegal; king is in check after this move.\n";
         }
+        // else {
+        //     // Debugging output
+        //     // std::cout << "Move " << squareToAlgebraic(move.from_square)
+        //     //           << " -> " << squareToAlgebraic(move.to_square)
+        //     //           << " is illegal; king is in check after this move.\n";
+        // }
     }
 }
 
@@ -240,7 +241,7 @@ void MoveGenerator::generateBishopMoves(const Board& board, std::vector<Move>& m
     int bishop_piece = (side == WHITE) ? WHITE_BISHOP : BLACK_BISHOP;
     U64 bishops = board.bitboards[bishop_piece];
 
-    // Loop through each rook
+    // Loop through each bishop
     while (bishops) {
         int bishop_square = bitscanForward(bishops);
         clear_bit(bishops, bishop_square);
@@ -572,7 +573,7 @@ bool MoveGenerator::isSquareAttackedByKnight(const Board& board, int square, int
         int knight_square = bitscanForward(pieces);
         clear_bit(pieces, knight_square);
 
-        // Possible knight move offsets
+        // Knight move offsets
         const int knight_offsets[8] = {17, 15, 10, 6, -6, -10, -15, -17};
 
         // Generate moves for the knight
@@ -605,7 +606,7 @@ bool MoveGenerator::isSquareAttackedByBishop(const Board& board, int square, int
         int piece_square = bitscanForward(pieces);
         clear_bit(pieces, piece_square);
 
-        // Generate rook attacks inline
+        // Generate the bishop's attacks in the diagonal
         const int directions[4] = {NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
         for (int dir = 0; dir < 4; ++dir) {
             int to_square = piece_square;

@@ -1,7 +1,9 @@
 #ifndef BOARD_H
 #define BOARD_H
+
 #include <string>
 #include <iostream>
+#include <sstream>
 #include "move.h"
 typedef unsigned long long U64;
 const int NO_SQUARE = -1;  // Represents "no en passant square"
@@ -60,7 +62,6 @@ constexpr U64 FILE_E = 0x1010101010101010ULL;
 constexpr U64 FILE_F = 0x2020202020202020ULL;
 constexpr U64 FILE_G = 0x4040404040404040ULL;
 constexpr U64 FILE_H = 0x8080808080808080ULL;
-
 constexpr U64 FILE_MASKS[8] = {FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H};
 
 
@@ -109,10 +110,10 @@ inline bool get_bit(U64 bitboard, int square) {
 inline void clear_bit(U64& bitboard, int square) {
     bitboard &= ~(1ULL << square);
 }
-
-// Additional utility functions
 int bitscanForward(U64 bb);
 int countBits(U64 bb);
+
+// Additional utility functions for strings
 std::string squareToAlgebraic(int square);
 char pieceToChar(Piece piece);
 std::string pieceToString(int piece);
