@@ -484,6 +484,39 @@ void testKnightMoves() {
 
 }
 
+void testSquareAttackedByKnight(){
+    // Initialize board
+    Board board;
+    board.resetBoard();
+
+    // Clear the board
+    for (int i = 0; i < 12; ++i) {
+        board.bitboards[i] = 0ULL;
+    }
+    board.updateOccupancies();
+
+    // Place a white knight at D4 
+    set_bit(board.bitboards[WHITE_KNIGHT], D4);
+    set_bit(board.bitboards[BLACK_KING], F6);
+
+    board.side = BLACK;
+    board.updateOccupancies();
+
+    // Generate moves
+    MoveGenerator moveGenerator;
+    std::vector<Move> move_list;
+    moveGenerator.generateAllLegalMoves(board, move_list);
+
+    // Print the moves
+    std::cout << "King moves from d4:\n";
+    for (const Move& move : move_list) {
+        std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << "\n";
+    }
+
+    size_t expected_move_count = 6;
+    assert(move_list.size() == expected_move_count);
+
+}
 
 int main() {
     
@@ -496,6 +529,8 @@ int main() {
     testBishops();
 
     testKnightMoves();
+
+    testSquareAttackedByKnight();
     
     return 0;
 }

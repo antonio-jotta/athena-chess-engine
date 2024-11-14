@@ -272,7 +272,7 @@ bool MoveGenerator::isKingInCheck(const Board& board, int side) {
 
     // Check for attacks from pawns, knights, bishops, rooks, queens, and the opponent's king
     //if (isSquareAttackedByPawn(board, king_square, opponent_side)) return true;
-    //if (isSquareAttackedByKnight(board, king_square, opponent_side)) return true;
+    if (isSquareAttackedByKnight(board, king_square, opponent_side)) return true;
     if (isSquareAttackedByBishop(board, king_square, opponent_side)) return true;
     if (isSquareAttackedByRook(board, king_square, opponent_side)) return true;
     if (isSquareAttackedByQueen(board, king_square, opponent_side)) return true;
