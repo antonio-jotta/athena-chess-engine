@@ -4,7 +4,7 @@
 #include <iostream>
 #include "move.h"
 typedef unsigned long long U64;
-const int NO_PIECE = -1;
+const int NO_SQUARE = -1;  // Represents "no en passant square"
 
 
 // Enum for pieces
@@ -21,7 +21,8 @@ enum Piece {
     BLACK_BISHOP, // 8
     BLACK_ROOK,   // 9
     BLACK_QUEEN,  // 10
-    BLACK_KING    // 11
+    BLACK_KING,   // 11
+    NO_PIECE      // Represents an empty square or the absence of a piece
 };
 
 enum Square {
@@ -60,6 +61,9 @@ constexpr U64 FILE_F = 0x2020202020202020ULL;
 constexpr U64 FILE_G = 0x4040404040404040ULL;
 constexpr U64 FILE_H = 0x8080808080808080ULL;
 
+constexpr U64 FILE_MASKS[8] = {FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H};
+
+
 class Board{
     public:
         // Bitboards for each piece
@@ -70,12 +74,16 @@ class Board{
 
         // Side to move
         Side side;
-        int move_number = 1;
         // En passant square (-1 if not available)
-        int en_passant;
-
-        // Castling rights represented as a bitmask
+        // Castling rights flags
+        enum CastlingRights {
+            WK = 1, WQ = 2, BK = 4, BQ = 8
+        };
+        
         int castling_rights;
+        int en_passant; // Square index or NO_SQUARE
+        int halfmove_clock;
+        int move_number;
         
         Board();
 
@@ -84,6 +92,8 @@ class Board{
         void updateOccupancies();
         void updateCastlingRights(const Move& move);
         void makeMove(const Move& move, bool switch_side = true);
+        void loadFEN(const std::string& fen);
+        std::string generateFEN() const;
         std::string getCastlingRightsString() const;
 };
 
@@ -99,10 +109,12 @@ inline bool get_bit(U64 bitboard, int square) {
 inline void clear_bit(U64& bitboard, int square) {
     bitboard &= ~(1ULL << square);
 }
+
 // Additional utility functions
 int bitscanForward(U64 bb);
 int countBits(U64 bb);
 std::string squareToAlgebraic(int square);
+char pieceToChar(Piece piece);
 std::string pieceToString(int piece);
-
+int algebraicToSquare(const std::string& algebraic);
 #endif

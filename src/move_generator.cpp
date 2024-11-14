@@ -488,7 +488,7 @@ void MoveGenerator::generateSlidingMovesInDirection(
         //std::cout << "Evaluating move from " << squareToAlgebraic(start_square) << " to " << squareToAlgebraic(to_square) << "\n";
 
         if (isBoundaryCrossed(start_square, to_square, direction_offset)) {
-            std::cout << "Boundary crossed at " << squareToAlgebraic(to_square) << "\n";
+            // std::cout << "Boundary crossed at " << squareToAlgebraic(to_square) << "\n";
             break;
         }
         // Check if square is occupied by a friendly piece
@@ -506,7 +506,7 @@ void MoveGenerator::generateSlidingMovesInDirection(
             flags |= FLAG_CAPTURE;
             
             move_list.emplace_back(start_square, to_square, piece_type, captured_piece, NO_PIECE, flags);
-            std::cout << "Captured opponent piece at " << squareToAlgebraic(to_square) << "\n";
+            // std::cout << "Captured opponent piece at " << squareToAlgebraic(to_square) << "\n";
             break;
         } else {
             // O problema dos bispos não é aqui

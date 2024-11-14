@@ -182,6 +182,154 @@ void Board::printBoard() {
     std::cout << "En Passant: " << (en_passant != -1 ? std::to_string(en_passant) : "None") << "\n";
     std::cout << "Castling: " << getCastlingRightsString() << "\n";}
 
+
+#include "board.h"
+#include <sstream>
+#include <iostream>
+
+void Board::loadFEN(const std::string& fen) {
+    // Clear the board
+    for (int i = 0; i < 12; ++i) {
+        bitboards[i] = 0ULL;
+    }
+    occupancies[WHITE] = occupancies[BLACK] = occupancies[BOTH] = 0ULL;
+
+    std::istringstream fenStream(fen);
+    std::string boardPart, activeColor, castling, enPassant, halfmoveClock, fullmoveNumber;
+
+    // Read each part of the FEN string
+    fenStream >> boardPart >> activeColor >> castling >> enPassant >> halfmoveClock >> fullmoveNumber;
+
+    // 1. Piece placement
+    int rank = 7;
+    int file = 0;
+
+    for (size_t i = 0; i < boardPart.length(); ++i) {
+        char c = boardPart[i];
+
+        if (c == '/') {
+            rank--;
+            file = 0;
+        } else if (isdigit(c)) {
+            file += c - '0'; // Skip empty squares
+        } else {
+            Piece piece = NO_PIECE;
+            switch (c) {
+                case 'P': piece = WHITE_PAWN; break;
+                case 'N': piece = WHITE_KNIGHT; break;
+                case 'B': piece = WHITE_BISHOP; break;
+                case 'R': piece = WHITE_ROOK; break;
+                case 'Q': piece = WHITE_QUEEN; break;
+                case 'K': piece = WHITE_KING; break;
+                case 'p': piece = BLACK_PAWN; break;
+                case 'n': piece = BLACK_KNIGHT; break;
+                case 'b': piece = BLACK_BISHOP; break;
+                case 'r': piece = BLACK_ROOK; break;
+                case 'q': piece = BLACK_QUEEN; break;
+                case 'k': piece = BLACK_KING; break;
+                default: break;
+            }
+            if (piece != NO_PIECE) {
+                int square = rank * 8 + file;
+                set_bit(bitboards[piece], square);
+                file++;
+            }
+        }
+    }
+
+    // 2. Active color
+    side = (activeColor == "w") ? WHITE : BLACK;
+
+    // 3. Castling availability
+    castling_rights = 0;
+    if (castling.find('K') != std::string::npos) castling_rights |= CASTLE_WHITE_KING_SIDE;
+    if (castling.find('Q') != std::string::npos) castling_rights |= CASTLE_WHITE_QUEEN_SIDE;
+    if (castling.find('k') != std::string::npos) castling_rights |= CASTLE_BLACK_KING_SIDE;
+    if (castling.find('q') != std::string::npos) castling_rights |= CASTLE_BLACK_QUEEN_SIDE;
+
+    // 4. En passant target square
+    if (enPassant != "-") {
+        en_passant = algebraicToSquare(enPassant);
+    } else {
+        en_passant = NO_SQUARE;
+    }
+
+    // 5. Halfmove clock
+    halfmove_clock = std::stoi(halfmoveClock);
+
+    // 6. Fullmove number
+    move_number = std::stoi(fullmoveNumber);
+
+    // Update occupancies
+    updateOccupancies();
+}
+
+std::string Board::generateFEN() const {
+    std::string fen;
+
+    // 1. Piece placement
+    for (int rank = 7; rank >= 0; --rank) {
+        int emptySquares = 0;
+        for (int file = 0; file < 8; ++file) {
+            int square = rank * 8 + file;
+            bool pieceFound = false;
+
+            for (int pieceType = WHITE_PAWN; pieceType <= BLACK_KING; ++pieceType) {
+                if (get_bit(bitboards[pieceType], square)) {
+                    if (emptySquares > 0) {
+                        fen += std::to_string(emptySquares);
+                        emptySquares = 0;
+                    }
+                    fen += pieceToChar(static_cast<Piece>(pieceType));
+                    pieceFound = true;
+                    break;
+                }
+            }
+            if (!pieceFound) {
+                emptySquares++;
+            }
+        }
+        if (emptySquares > 0) {
+            fen += std::to_string(emptySquares);
+        }
+        if (rank > 0) {
+            fen += '/';
+        }
+    }
+
+    // 2. Active color
+    fen += ' ';
+    fen += (side == WHITE) ? 'w' : 'b';
+
+    // 3. Castling availability
+    fen += ' ';
+    std::string castling = "";
+    if (castling_rights & CASTLE_WHITE_KING_SIDE)  castling += 'K';
+    if (castling_rights & CASTLE_WHITE_QUEEN_SIDE) castling += 'Q';
+    if (castling_rights & CASTLE_BLACK_KING_SIDE)  castling += 'k';
+    if (castling_rights & CASTLE_BLACK_QUEEN_SIDE) castling += 'q';
+    fen += (castling.empty()) ? "-" : castling;
+
+    // 4. En passant target square
+    fen += ' ';
+    if (en_passant != NO_SQUARE) {
+        fen += squareToAlgebraic(en_passant);
+    } else {
+        fen += '-';
+    }
+
+    // 5. Halfmove clock
+    fen += ' ';
+    fen += std::to_string(halfmove_clock);
+
+    // 6. Fullmove number
+    fen += ' ';
+    fen += std::to_string(move_number);
+
+    return fen;
+}
+
+
 // Find the index of the least significant 1 bit in b (returns 0-based index)
 // Used for iteration in the bitboard
 int bitscanForward(U64 b) {
@@ -229,6 +377,32 @@ std::string squareToAlgebraic(int square) {
     return std::string(1, file) + std::string(1, rank);
 }
 
+// In board.h or a utility header
+int algebraicToSquare(const std::string& algebraic) {
+    int file = algebraic[0] - 'a';
+    int rank = algebraic[1] - '1';
+    return rank * 8 + file;
+}
+
+char pieceToChar(Piece piece){
+    switch (piece) {
+        case WHITE_PAWN:   return 'P';
+        case WHITE_KNIGHT: return 'N';
+        case WHITE_BISHOP: return 'B';
+        case WHITE_ROOK:   return 'R';
+        case WHITE_QUEEN:  return 'Q';
+        case WHITE_KING:   return 'K';
+        case BLACK_PAWN:   return 'p';
+        case BLACK_KNIGHT: return 'n';
+        case BLACK_BISHOP: return 'b';
+        case BLACK_ROOK:   return 'r';
+        case BLACK_QUEEN:  return 'q';
+        case BLACK_KING:   return 'k';
+        default:           return '?';
+    }
+}
+
+
 std::string pieceToString(int piece) {
     switch (piece) {
         case WHITE_PAWN:   return "White Pawn";
@@ -258,3 +432,5 @@ std::string Board::getCastlingRightsString() const {
     
     return rights.empty() ? "None" : rights;
 }
+
+
