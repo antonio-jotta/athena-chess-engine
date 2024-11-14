@@ -3,14 +3,16 @@
 
 #include <cstdint>
 
-// Enums for move flags
-enum MoveFlags{
-    FLAG_NONE = 0,
-    FLAG_CAPTURE = 1 << 0,
-    FLAG_EN_PASSANT = 1 << 1,
-    FLAG_CASTLING = 1 << 2,
-    FLAG_PROMOTION = 1 << 3
+// Move flags
+enum MoveFlags {
+    FLAG_NONE               = 0,      // normal move without any special characteristics
+    FLAG_CAPTURE            = 1 << 0, // the move is a capture
+    FLAG_EN_PASSANT         = 1 << 1, // en passant captures
+    FLAG_CASTLING           = 1 << 2, // castling moves
+    FLAG_PROMOTION          = 1 << 3, // the move is a pawn promotion
+    FLAG_PAWN_DOUBLE_PUSH   = 1 << 4  // pawn's initial two-square advance
 };
+
 
 struct Move{
     int from_square; // 0-63

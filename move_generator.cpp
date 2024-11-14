@@ -1,7 +1,7 @@
 #include "move_generator.h"
 
 void MoveGenerator::generateAllMoves(const Board& board, std::vector<Move>& move_list){
-    // generatePawnMoves(board, move_list);
+    generatePawnMoves(board, move_list);
     generateKnightMoves(board, move_list);
     generateBishopMoves(board, move_list);
     generateRookMoves(board, move_list);
@@ -37,9 +37,150 @@ void MoveGenerator::generateAllLegalMoves(const Board& board, std::vector<Move>&
 }
 
 
-// void MoveGenerator::generatePawnMoves(const Board& board, std::vector<Move>& move_list){
-    
-// }
+void MoveGenerator::generatePawnMoves(const Board& board, std::vector<Move>& move_list) {
+    int side = board.side;
+    int opponent_side = (side == WHITE) ? BLACK : WHITE;
+    int pawn_piece = (side == WHITE) ? WHITE_PAWN : BLACK_PAWN;
+    U64 pawns = board.bitboards[pawn_piece];
+    int pawn_push = (side == WHITE) ? NORTH : SOUTH;
+    int start_rank = (side == WHITE) ? 1 : 6;
+    int promotion_rank = (side == WHITE) ? 7 : 0;
+    int en_passant_square = board.en_passant; // -1 if not available
+
+    // Direction offsets for pawn captures
+    int capture_offsets[2];
+    if (side == WHITE) {
+        capture_offsets[0] = NORTH_WEST;
+        capture_offsets[1] = NORTH_EAST;
+    } else {
+        capture_offsets[0] = SOUTH_WEST;
+        capture_offsets[1] = SOUTH_EAST;
+    }
+
+    while (pawns) {
+        int pawn_square = bitscanForward(pawns);
+        clear_bit(pawns, pawn_square);
+
+        int pawn_rank = pawn_square / 8;
+
+        // **Single Forward Move**
+        int to_square = pawn_square + pawn_push;
+        if (to_square >= 0 && to_square < 64 && !get_bit(board.occupancies[BOTH], to_square)) {
+            int to_rank = to_square / 8;
+
+            // **Promotion Handling**
+            if (to_rank == promotion_rank) {
+                // Promote to Queen, Rook, Bishop, Knight
+                int promotion_pieces[4] = {
+                    (side == WHITE) ? WHITE_QUEEN : BLACK_QUEEN,
+                    (side == WHITE) ? WHITE_ROOK : BLACK_ROOK,
+                    (side == WHITE) ? WHITE_BISHOP : BLACK_BISHOP,
+                    (side == WHITE) ? WHITE_KNIGHT : BLACK_KNIGHT
+                };
+
+                for (int i = 0; i < 4; ++i) {
+                    move_list.emplace_back(
+                        pawn_square,
+                        to_square,
+                        pawn_piece,
+                        NO_PIECE,
+                        promotion_pieces[i],
+                        FLAG_PROMOTION
+                    );
+                }
+            } else {
+                // **Normal Single Move**
+                move_list.emplace_back(
+                    pawn_square,
+                    to_square,
+                    pawn_piece,
+                    NO_PIECE,
+                    NO_PIECE,
+                    FLAG_NONE
+                );
+
+                // **Double Forward Move**
+                if (pawn_rank == start_rank) {
+                    int to_square2 = to_square + pawn_push;
+                    if (!get_bit(board.occupancies[BOTH], to_square2)) {
+                        move_list.emplace_back(
+                            pawn_square,
+                            to_square2,
+                            pawn_piece,
+                            NO_PIECE,
+                            NO_PIECE,
+                            FLAG_PAWN_DOUBLE_PUSH
+                        );
+                    }
+                }
+            }
+        }
+
+        // **Captures**
+        for (int i = 0; i < 2; ++i) {
+            int capture_offset = capture_offsets[i];
+            int capture_square = pawn_square + capture_offset;
+
+            if (capture_square >= 0 && capture_square < 64) {
+                int from_file = pawn_square % 8;
+                int to_file = capture_square % 8;
+
+                // Ensure no wrap-around
+                if (abs(from_file - to_file) == 1) {
+                    // **Normal Capture**
+                    if (get_bit(board.occupancies[opponent_side], capture_square)) {
+                        int captured_piece = getPieceOnSquare(board, capture_square, opponent_side);
+                        int to_rank = capture_square / 8;
+
+                        // **Promotion Capture**
+                        if (to_rank == promotion_rank) {
+                            int promotion_pieces[4] = {
+                                (side == WHITE) ? WHITE_QUEEN : BLACK_QUEEN,
+                                (side == WHITE) ? WHITE_ROOK : BLACK_ROOK,
+                                (side == WHITE) ? WHITE_BISHOP : BLACK_BISHOP,
+                                (side == WHITE) ? WHITE_KNIGHT : BLACK_KNIGHT
+                            };
+
+                            for (int j = 0; j < 4; ++j) {
+                                move_list.emplace_back(
+                                    pawn_square,
+                                    capture_square,
+                                    pawn_piece,
+                                    captured_piece,
+                                    promotion_pieces[j],
+                                    FLAG_PROMOTION | FLAG_CAPTURE
+                                );
+                            }
+                        } else {
+                            // **Normal Capture Move**
+                            move_list.emplace_back(
+                                pawn_square,
+                                capture_square,
+                                pawn_piece,
+                                captured_piece,
+                                NO_PIECE,
+                                FLAG_CAPTURE
+                            );
+                        }
+                    }
+
+                    // **En Passant Capture**
+                    else if (capture_square == en_passant_square) {
+                        move_list.emplace_back(
+                            pawn_square,
+                            capture_square,
+                            pawn_piece,
+                            (opponent_side == WHITE) ? WHITE_PAWN : BLACK_PAWN,
+                            NO_PIECE,
+                            FLAG_EN_PASSANT
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 void MoveGenerator::generateKnightMoves(const Board& board, std::vector<Move>& move_list) {
     int side = board.side;
@@ -214,8 +355,109 @@ void MoveGenerator::generateKingMoves(const Board& board, std::vector<Move>& mov
                 move_list.emplace_back(king_square, to_square, king_piece, NO_PIECE, NO_PIECE, flags);
             }
         }
+        // Generate castling moves
+        if (!isKingInCheck(board, side)) {
+            generateCastlingMoves(board, move_list, king_square, side);
+        }        
         clear_bit(king, king_square);
     }
+}
+
+bool MoveGenerator::isKingInCheck(const Board& board, int side) {
+    int king_square = bitscanForward(board.bitboards[(side == WHITE) ? WHITE_KING : BLACK_KING]);
+
+    // Generate attack bitboards for opponent
+    int opponent_side = (side == WHITE) ? BLACK : WHITE;
+
+    // Check for attacks from pawns, knights, bishops, rooks, queens, and the opponent's king
+    if (isSquareAttackedByPawn(board, king_square, opponent_side)) return true;
+    if (isSquareAttackedByKnight(board, king_square, opponent_side)) return true;
+    if (isSquareAttackedByBishop(board, king_square, opponent_side)) return true;
+    if (isSquareAttackedByRook(board, king_square, opponent_side)) return true;
+    if (isSquareAttackedByQueen(board, king_square, opponent_side)) return true;
+    if (isSquareAttackedByKing(board, king_square, opponent_side)) return true;
+
+    // No attacks on the king
+    return false;
+}
+
+
+void MoveGenerator::generateCastlingMoves(const Board& board, std::vector<Move>& move_list, int king_square, int side) {
+
+    // King-side castling
+    if (canCastleKingSide(board, side)) {
+        if (isSafeToCastle(board, king_square, side, "king")) {
+            int to_square = (side == WHITE) ? G1 : G8;
+            move_list.emplace_back(king_square, to_square, (side == WHITE) ? WHITE_KING : BLACK_KING, NO_PIECE, NO_PIECE, FLAG_CASTLING);
+        }
+    }
+
+    // Queen-side castling
+    if (canCastleQueenSide(board, side)) {
+        if (isSafeToCastle(board, king_square, side, "queen")) {
+            int to_square = (side == WHITE) ? C1 : C8;
+            move_list.emplace_back(king_square, to_square, (side == WHITE) ? WHITE_KING : BLACK_KING, NO_PIECE, NO_PIECE, FLAG_CASTLING);
+        }
+    }
+}
+
+
+bool MoveGenerator::canCastleKingSide(const Board& board, int side) {
+    if (side == WHITE) {
+        if (!(board.castling_rights & CASTLE_WHITE_KING_SIDE)) return false;
+        if (get_bit(board.occupancies[BOTH], F1) || get_bit(board.occupancies[BOTH], G1)) return false;
+        return true;
+    } else {
+        if (!(board.castling_rights & CASTLE_BLACK_KING_SIDE)) return false;
+        if (get_bit(board.occupancies[BOTH], F8) || get_bit(board.occupancies[BOTH], G8)) return false;
+        return true;
+    }
+}
+
+bool MoveGenerator::canCastleQueenSide(const Board& board, int side) {
+    if (side == WHITE) {
+        if (!(board.castling_rights & CASTLE_WHITE_QUEEN_SIDE)) return false;
+        if (get_bit(board.occupancies[BOTH], B1) || get_bit(board.occupancies[BOTH], C1) || get_bit(board.occupancies[BOTH], D1)) return false;
+        return true;
+    } else {
+        if (!(board.castling_rights & CASTLE_BLACK_QUEEN_SIDE)) return false;
+        if (get_bit(board.occupancies[BOTH], B8) || get_bit(board.occupancies[BOTH], C8) || get_bit(board.occupancies[BOTH], D8)) return false;
+        return true;
+    }
+}
+
+// Check if any of the squares between the king and the rook are attacked
+bool MoveGenerator::isSafeToCastle(const Board& board, int king_square, int side, const std::string& castling_type) {
+    int intermediate_square1, intermediate_square2;
+    
+    if (castling_type == "king") {
+        // King-side castling
+        intermediate_square1 = king_square + 1;  // F1 or F8
+        intermediate_square2 = king_square + 2;  // G1 or G8
+    } else {
+        // Queen-side castling
+        intermediate_square1 = king_square - 1;  // D1 or D8
+        intermediate_square2 = king_square - 2;  // C1 or C8
+    }
+
+    // Create a temporary board for testing each square without making permanent changes
+    Board temp_board = board;
+    
+    // Check if moving to intermediate_square1 or intermediate_square2 would put the king in check
+    for (int test_square : {king_square, intermediate_square1, intermediate_square2}) {
+        clear_bit(temp_board.bitboards[(side == WHITE) ? WHITE_KING : BLACK_KING], king_square);
+        set_bit(temp_board.bitboards[(side == WHITE) ? WHITE_KING : BLACK_KING], test_square);
+        temp_board.updateOccupancies();
+        
+        if (isKingInCheck(temp_board, side)) {
+            return false;
+        }
+        
+        // Restore the original board position after each test
+        temp_board = board;
+    }
+
+    return true;
 }
 
 
@@ -264,23 +506,50 @@ void MoveGenerator::generateSlidingMovesInDirection(
     }
 }
 
-bool MoveGenerator::isKingInCheck(const Board& board, int side) {
-    int king_square = bitscanForward(board.bitboards[(side == WHITE) ? WHITE_KING : BLACK_KING]);
 
-    // Generate attack bitboards for opponent
-    int opponent_side = (side == WHITE) ? BLACK : WHITE;
+bool MoveGenerator::isSquareAttackedByPawn(const Board& board, int square, int opponent_side) {
+    int pawn_piece = (opponent_side == WHITE) ? WHITE_PAWN : BLACK_PAWN;
+    U64 pawns = board.bitboards[pawn_piece];
+    U64 pieces = pawns;
 
-    // Check for attacks from pawns, knights, bishops, rooks, queens, and the opponent's king
-    //if (isSquareAttackedByPawn(board, king_square, opponent_side)) return true;
-    if (isSquareAttackedByKnight(board, king_square, opponent_side)) return true;
-    if (isSquareAttackedByBishop(board, king_square, opponent_side)) return true;
-    if (isSquareAttackedByRook(board, king_square, opponent_side)) return true;
-    if (isSquareAttackedByQueen(board, king_square, opponent_side)) return true;
-    if (isSquareAttackedByKing(board, king_square, opponent_side)) return true;
+    int attack_offsets[2];
+    if (opponent_side == WHITE) {
+        attack_offsets[0] = NORTH_EAST; // +9
+        attack_offsets[1] = NORTH_WEST; // +7
+    } else {
+        attack_offsets[0] = SOUTH_EAST; // -7
+        attack_offsets[1] = SOUTH_WEST; // -9
+    }
 
-    // No attacks on the king
+    while (pieces) {
+        int pawn_square = bitscanForward(pieces);
+        clear_bit(pieces, pawn_square);
+
+        for (int i = 0; i < 2; ++i) {
+            int attack_square = pawn_square + attack_offsets[i];
+
+            // Ensure the attack square is on the board
+            if (attack_square < 0 || attack_square >= 64) {
+                continue;
+            }
+
+            int from_file = pawn_square % 8;
+            int to_file = attack_square % 8;
+
+            // Ensure no wrap-around
+            if (abs(from_file - to_file) == 1) {
+                if (attack_square == square) {
+                    return true; // Target square is attacked by a pawn
+                }
+            }
+        }
+    }
+
+    // No attacks found
     return false;
 }
+
+
 
 bool MoveGenerator::isSquareAttackedByKnight(const Board& board, int square, int opponent_side) {
     // Get the bitboard of opponent's knights

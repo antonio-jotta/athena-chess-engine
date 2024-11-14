@@ -82,6 +82,7 @@ class Board{
         void resetBoard();
         void printBoard();
         void updateOccupancies();
+        void updateCastlingRights(const Move& move);
         void makeMove(const Move& move, bool switch_side = true);
 };
 
@@ -101,5 +102,6 @@ inline void clear_bit(U64& bitboard, int square) {
 int bitscanForward(U64 bb);
 int countBits(U64 bb);
 std::string squareToAlgebraic(int square);
+std::string pieceToString(int piece);
 
 #endif

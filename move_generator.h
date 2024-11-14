@@ -24,6 +24,11 @@ class MoveGenerator{
         void generateRookMoves(const Board& board, std::vector<Move>& move_list);
         void generateQueenMoves(const Board& board, std::vector<Move>& move_list);
         void generateKingMoves(const Board& board, std::vector<Move>& move_list);
+        void generateCastlingMoves(const Board& board, std::vector<Move>& move_list, int king_square, int side);
+        bool canCastleKingSide(const Board& board, int side);
+        bool canCastleQueenSide(const Board& board, int side);
+        bool isSafeToCastle(const Board& board, int king_square, int side, const std::string& castling_type);
+
         void generateSlidingMovesInDirection(const Board& board, 
             std::vector<Move>& move_list,
             int start_square,

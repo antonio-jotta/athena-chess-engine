@@ -5,33 +5,61 @@ Board::Board() {
 }
 
 void Board::makeMove(const Move& move, bool switch_side) {
-    int from_square = move.from_square;
-    int to_square = move.to_square;
-    int piece_type = move.piece;
-    int captured_piece_type = move.captured_piece;
-
     // Remove the piece from the from_square
-    clear_bit(bitboards[piece_type], from_square);
+    clear_bit(bitboards[move.piece], move.from_square);
 
-    // Place the piece on the to_square
-    set_bit(bitboards[piece_type], to_square);
+    // If it's a capture, remove the captured piece
+    if (move.flags & FLAG_CAPTURE) {
+        clear_bit(bitboards[move.captured_piece], move.to_square);
+    }
 
-    // Handle captures
-    if (captured_piece_type != NO_PIECE) {
-        // Remove the captured piece from its bitboard
-        clear_bit(bitboards[captured_piece_type], to_square);
+    // Handle promotions
+    if (move.flags & FLAG_PROMOTION) {
+        set_bit(bitboards[move.promoted_piece], move.to_square);
+    }
+    // Handle castling
+    else if (move.flags & FLAG_CASTLING) {
+        set_bit(bitboards[move.piece], move.to_square);
+
+        // Move the rook as well
+        if (side == WHITE) {
+            if (move.to_square == G1) {
+                // King-side castling
+                clear_bit(bitboards[WHITE_ROOK], H1);
+                set_bit(bitboards[WHITE_ROOK], F1);
+            } else if (move.to_square == C1) {
+                // Queen-side castling
+                clear_bit(bitboards[WHITE_ROOK], A1);
+                set_bit(bitboards[WHITE_ROOK], D1);
+            }
+        } else {
+            if (move.to_square == G8) {
+                // King-side castling
+                clear_bit(bitboards[BLACK_ROOK], H8);
+                set_bit(bitboards[BLACK_ROOK], F8);
+            } else if (move.to_square == C8) {
+                // Queen-side castling
+                clear_bit(bitboards[BLACK_ROOK], A8);
+                set_bit(bitboards[BLACK_ROOK], D8);
+            }
+        }
+    }
+    // Normal move
+    else {
+        set_bit(bitboards[move.piece], move.to_square);
     }
 
     // Update occupancies
     updateOccupancies();
 
-    // Switch the side to move if needed
+    // Update castling rights
+    updateCastlingRights(move);
+
+    // Update side to move
     if (switch_side) {
         side = (side == WHITE) ? BLACK : WHITE;
     }
 }
-
-
 
 void Board::resetBoard() {
     // Clear all bitboards
@@ -84,6 +112,34 @@ void Board::updateOccupancies() {
     occupancies[BOTH] = occupancies[WHITE] | occupancies[BLACK];
 }
 
+void Board::updateCastlingRights(const Move& move) {
+    // If king or rook moves, or rook is captured, update castling rights
+    if (move.piece == WHITE_KING) {
+        castling_rights &= ~(CASTLE_WHITE_KING_SIDE | CASTLE_WHITE_QUEEN_SIDE);
+    }
+    if (move.piece == BLACK_KING) {
+        castling_rights &= ~(CASTLE_BLACK_KING_SIDE | CASTLE_BLACK_QUEEN_SIDE);
+    }
+    if (move.piece == WHITE_ROOK) {
+        if (move.from_square == H1) castling_rights &= ~CASTLE_WHITE_KING_SIDE;
+        if (move.from_square == A1) castling_rights &= ~CASTLE_WHITE_QUEEN_SIDE;
+    }
+    if (move.piece == BLACK_ROOK) {
+        if (move.from_square == H8) castling_rights &= ~CASTLE_BLACK_KING_SIDE;
+        if (move.from_square == A8) castling_rights &= ~CASTLE_BLACK_QUEEN_SIDE;
+    }
+    if (move.flags & FLAG_CAPTURE) {
+        if (move.captured_piece == WHITE_ROOK) {
+            if (move.to_square == H1) castling_rights &= ~CASTLE_WHITE_KING_SIDE;
+            if (move.to_square == A1) castling_rights &= ~CASTLE_WHITE_QUEEN_SIDE;
+        }
+        if (move.captured_piece == BLACK_ROOK) {
+            if (move.to_square == H8) castling_rights &= ~CASTLE_BLACK_KING_SIDE;
+            if (move.to_square == A8) castling_rights &= ~CASTLE_BLACK_QUEEN_SIDE;
+        }
+    }
+}
+
 
 void Board::printBoard() {
     for (int rank = 7; rank >= 0; rank--) {
@@ -121,18 +177,6 @@ void Board::printBoard() {
     std::cout << "Castling: " << castling_rights << "\n";
 }
 
-std::string squareToAlgebraic(int square) {
-    // Ensure square is within bounds
-    if (square < 0 || square > 63) {
-        return "Invalid";  // Return an error string if out of bounds
-    }
-    
-    char file = 'a' + (square % 8);       // File from 'a' to 'h'
-    char rank = '1' + (square / 8);       // Rank from '1' to '8'
-    
-    return std::string(1, file) + std::string(1, rank);
-}
-
 // Find the index of the least significant 1 bit in b (returns 0-based index)
 // Used for iteration in the bitboard
 int bitscanForward(U64 b) {
@@ -166,3 +210,35 @@ int countBits(U64 b) {
     #endif
 }
 
+
+// Helper functions for prints
+std::string squareToAlgebraic(int square) {
+    // Ensure square is within bounds
+    if (square < 0 || square > 63) {
+        return "Invalid";  // Return an error string if out of bounds
+    }
+    
+    char file = 'a' + (square % 8);       // File from 'a' to 'h'
+    char rank = '1' + (square / 8);       // Rank from '1' to '8'
+    
+    return std::string(1, file) + std::string(1, rank);
+}
+
+std::string pieceToString(int piece) {
+    switch (piece) {
+        case WHITE_PAWN:   return "White Pawn";
+        case WHITE_KNIGHT: return "White Knight";
+        case WHITE_BISHOP: return "White Bishop";
+        case WHITE_ROOK:   return "White Rook";
+        case WHITE_QUEEN:  return "White Queen";
+        case WHITE_KING:   return "White King";
+        case BLACK_PAWN:   return "Black Pawn";
+        case BLACK_KNIGHT: return "Black Knight";
+        case BLACK_BISHOP: return "Black Bishop";
+        case BLACK_ROOK:   return "Black Rook";
+        case BLACK_QUEEN:  return "Black Queen";
+        case BLACK_KING:   return "Black King";
+        case NO_PIECE:     return "No Piece";
+        default:           return "Unknown Piece";
+    }
+}
