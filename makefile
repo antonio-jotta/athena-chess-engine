@@ -2,43 +2,55 @@
 CXX = g++
 
 # Compiler flags
-CXXFLAGS = -Wall -pedantic -std=c++11
+CXXFLAGS = -Wall -pedantic -std=c++11 -Iinclude
+
+# Directories
+SRC_DIR = src
+INCLUDE_DIR = include
+BUILD_DIR = build
+TEST_DIR = tests
 
 # Executable names
 EXEC = athena
-TEST_EXEC = tests
+TEST_EXEC = move_generation
 
 # Source files
-SRC = athena.cpp board.cpp move_generator.cpp tests.cpp
-OBJ = athena.o board.o move_generator.o tests.o
+SRC_FILES := $(filter-out $(SRC_DIR)/athena.cpp, $(wildcard $(SRC_DIR)/*.cpp))
+OBJ_FILES := $(patsubst $(SRC_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(SRC_FILES))
+ATHENA_OBJ := $(BUILD_DIR)/athena.o
+
+TEST_FILES := $(wildcard $(TEST_DIR)/*.cpp)
+TEST_OBJ_FILES := $(patsubst $(TEST_DIR)/%.cpp,$(BUILD_DIR)/%.o,$(TEST_FILES))
 
 # Default target
 all: $(EXEC) $(TEST_EXEC)
 
-# Link the object files to create the executable
-$(EXEC): athena.o board.o move_generator.o
-	$(CXX) $(CXXFLAGS) -o $(EXEC) athena.o board.o move_generator.o
+# Build the main executable
+$(EXEC): $(OBJ_FILES) $(ATHENA_OBJ)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJ_FILES) $(ATHENA_OBJ)
 
 # Build the tests executable
-$(TEST_EXEC): tests.o board.o move_generator.o
-	$(CXX) $(CXXFLAGS) -o $(TEST_EXEC) tests.o board.o move_generator.o
+$(TEST_EXEC): $(OBJ_FILES) $(TEST_OBJ_FILES)
+	$(CXX) $(CXXFLAGS) -o $@ $(OBJ_FILES) $(TEST_OBJ_FILES)
 
-# Compilation rules
-athena.o: athena.cpp board.h move_generator.h move.h
-	$(CXX) $(CXXFLAGS) -c athena.cpp -o athena.o
+# Compile athena.cpp separately (contains main)
+$(ATHENA_OBJ): $(SRC_DIR)/athena.cpp
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-board.o: board.cpp board.h move.h
-	$(CXX) $(CXXFLAGS) -c board.cpp -o board.o
+# Pattern rules for compiling source files
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-move_generator.o: move_generator.cpp move_generator.h board.h move.h
-	$(CXX) $(CXXFLAGS) -c move_generator.cpp -o move_generator.o
-
-tests.o: tests.cpp board.h move_generator.h move.h
-	$(CXX) $(CXXFLAGS) -c tests.cpp -o tests.o
+# Pattern rules for compiling test files
+$(BUILD_DIR)/%.o: $(TEST_DIR)/%.cpp
+	@mkdir -p $(BUILD_DIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Clean up object files and executables
 clean:
-	rm -f $(OBJ) $(EXEC) $(TEST_EXEC)
+	rm -f $(BUILD_DIR)/*.o $(EXEC) $(TEST_EXEC)
 
 # Phony targets
 .PHONY: all clean
