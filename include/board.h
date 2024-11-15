@@ -8,25 +8,6 @@
 typedef unsigned long long U64;
 const int NO_SQUARE = -1;  // Represents "no en passant square"
 
-
-// Enum for pieces
-
-enum Piece {
-    WHITE_PAWN,   // 0
-    WHITE_KNIGHT, // 1
-    WHITE_BISHOP, // 2
-    WHITE_ROOK,   // 3
-    WHITE_QUEEN,  // 4
-    WHITE_KING,   // 5
-    BLACK_PAWN,   // 6
-    BLACK_KNIGHT, // 7
-    BLACK_BISHOP, // 8
-    BLACK_ROOK,   // 9
-    BLACK_QUEEN,  // 10
-    BLACK_KING,   // 11
-    NO_PIECE      // Represents an empty square or the absence of a piece
-};
-
 enum Square {
     A1, B1, C1, D1, E1, F1, G1, H1,
     A2, B2, C2, D2, E2, F2, G2, H2,
@@ -92,6 +73,7 @@ class Board{
         void printBoard();
         void updateOccupancies();
         void updateCastlingRights(const Move& move);
+        bool isGameOver(Board& board);
         void makeMove(const Move& move, bool switch_side = true);
         void loadFEN(const std::string& fen);
         std::string generateFEN() const;

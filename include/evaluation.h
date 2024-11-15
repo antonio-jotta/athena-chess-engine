@@ -2,6 +2,7 @@
 #define EVALUATION_H
 
 #include "board.h"
+#include "move.h"
 
 class Evaluation {
 public:
@@ -29,7 +30,7 @@ public:
     static int scorePawnStructure(const Board& board, int side);
     static int materialScore(const Board& board);
     static int mobilityScore(const Board& board);
-
+    
     
 };
 

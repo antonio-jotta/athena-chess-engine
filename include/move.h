@@ -13,6 +13,22 @@ enum MoveFlags {
     FLAG_PAWN_DOUBLE_PUSH   = 1 << 4  // pawn's initial two-square advance
 };
 
+// Enum for pieces
+enum Piece {
+    WHITE_PAWN,   // 0
+    WHITE_KNIGHT, // 1
+    WHITE_BISHOP, // 2
+    WHITE_ROOK,   // 3
+    WHITE_QUEEN,  // 4
+    WHITE_KING,   // 5
+    BLACK_PAWN,   // 6
+    BLACK_KNIGHT, // 7
+    BLACK_BISHOP, // 8
+    BLACK_ROOK,   // 9
+    BLACK_QUEEN,  // 10
+    BLACK_KING,   // 11
+    NO_PIECE      // Represents an empty square or the absence of a piece
+};
 
 struct Move{
     int from_square; // 0-63
@@ -27,6 +43,11 @@ struct Move{
         : from_square(from), to_square(to), piece(p),
           captured_piece(captured), promoted_piece(promoted), flags(f) {}
 
-};
+    // Default Constructor
+    Move()
+        : from_square(-1), to_square(-1), piece(NO_PIECE),
+          captured_piece(NO_PIECE), promoted_piece(NO_PIECE), flags(FLAG_NONE) {}
+    
+};  
 
 #endif

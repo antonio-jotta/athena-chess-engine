@@ -152,6 +152,11 @@ int main() {
         "Mate in 6 for black"
     );
 
+    testEvaluationWithFEN(
+        "7k/8/5RK1/8/8/8/8/8 b - - 0 1",
+        "Mate in one - White to play"
+    );
+
     Board board;
     board.loadFEN("r1bqkbnr/pppppppp/n7/8/8/N7/PPPPPPPP/R1BQKBNR w KQkq - 0 1");
     std::string fen = board.generateFEN();

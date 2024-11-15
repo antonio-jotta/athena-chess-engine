@@ -1,10 +1,11 @@
 #ifndef MOVE_GENERATOR_H
 #define MOVE_GENERATOR_H
 
-#include "board.h"
-#include "move.h"
-#include <vector>
 
+#include "move.h"
+#include "board.h"
+#include <vector>
+#include <limits>
 
 class MoveGenerator{
     public:

@@ -150,7 +150,6 @@ void Board::updateCastlingRights(const Move& move) {
     }
 }
 
-
 void Board::printBoard() {
     for (int rank = 7; rank >= 0; rank--) {
         std::cout << rank + 1 << "  ";

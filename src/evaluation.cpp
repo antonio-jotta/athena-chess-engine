@@ -11,7 +11,7 @@ const int ISOLATED_PAWN_PENALTY = -15;
 
 
 
-int Evaluation::evaluatePosition(const Board& board) {
+int Evaluation::evaluatePosition(const Board& board){
     int whoToMove = (board.side == WHITE) ? 1 : -1;
 
     int material = materialScore(board);
@@ -163,6 +163,16 @@ int Evaluation::mobilityScore(const Board& board) {
     int whiteMobility = whiteMoves.size();
     int blackMobility = blackMoves.size();
 
+    if(moveGenerator.isKingInCheck(whiteBoard, WHITE)){
+        if(whiteMoves.empty()){
+            return static_cast<int>(std::numeric_limits<int>::min());
+        }
+    }
+    else if(moveGenerator.isKingInCheck(blackBoard, BLACK)){
+        if(blackMoves.empty()){
+            return static_cast<int>(std::numeric_limits<int>::max());
+        }
+    }
+
     return static_cast<int>(MOBILITY_WEIGHT * (whiteMobility - blackMobility));
 }
-
