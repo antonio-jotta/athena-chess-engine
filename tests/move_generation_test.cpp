@@ -5,7 +5,65 @@
 #include <iostream>
 #include <cassert>
 
+Move fromUCI(const std::string& moveStr, const Board& board) {
+    if (moveStr.length() < 4) return Move(-1, -1, NO_PIECE, NO_PIECE, NO_PIECE, 0); // Invalid move
 
+    int fromSquare = algebraicToSquare(moveStr.substr(0, 2));
+    int toSquare = algebraicToSquare(moveStr.substr(2, 2));
+
+    // Handle promotion if applicable (e.g., "e7e8q")
+    int promotedPiece = NO_PIECE;
+    if (moveStr.length() == 5) {
+        char promo = moveStr[4];
+        promotedPiece = (board.side == WHITE)
+                            ? (promo == 'q' ? WHITE_QUEEN : promo == 'r' ? WHITE_ROOK
+                                           : promo == 'b' ? WHITE_BISHOP
+                                                          : WHITE_KNIGHT)
+                            : (promo == 'q' ? BLACK_QUEEN : promo == 'r' ? BLACK_ROOK
+                                           : promo == 'b' ? BLACK_BISHOP
+                                                          : BLACK_KNIGHT);
+    }
+
+    // Determine the moving piece
+    int movingPiece = NO_PIECE;
+    for (int piece = WHITE_PAWN; piece <= BLACK_KING; ++piece) {
+        if (get_bit(board.bitboards[piece], fromSquare)) {
+            movingPiece = piece;
+            break;
+        }
+    }
+
+    // Determine the captured piece, if any
+    int capturedPiece = NO_PIECE;
+    for (int piece = WHITE_PAWN; piece <= BLACK_KING; ++piece) {
+        if (get_bit(board.bitboards[piece], toSquare)) {
+            capturedPiece = piece;
+            break;
+        }
+    }
+
+    // Determine flags
+    uint8_t flags = 0;
+    if (capturedPiece != NO_PIECE) flags |= FLAG_CAPTURE;
+    if (promotedPiece != NO_PIECE) flags |= FLAG_PROMOTION;
+
+    return Move(fromSquare, toSquare, movingPiece, capturedPiece, promotedPiece, flags);
+}
+
+std::string toUCI(const Move& move) {
+    std::string uci = squareToAlgebraic(move.from_square) + squareToAlgebraic(move.to_square);
+    if (move.promoted_piece != NO_PIECE) {
+        char promo = (move.promoted_piece == WHITE_QUEEN || move.promoted_piece == BLACK_QUEEN)
+                         ? 'q'
+                         : (move.promoted_piece == WHITE_ROOK || move.promoted_piece == BLACK_ROOK)
+                               ? 'r'
+                               : (move.promoted_piece == WHITE_BISHOP || move.promoted_piece == BLACK_BISHOP)
+                                     ? 'b'
+                                     : 'n';
+        uci += promo;
+    }
+    return uci;
+}
 
 void testRookMovesEmptyBoard();
 void testRookMovesBlockedByFriendly();
@@ -57,6 +115,22 @@ void runPawnTests(){
 }
 
 
+void testPawnCapture();
+void testKnightCapture();
+void testMultipleCaptures();
+void testPromotionCapture();
+void testEnPassantCapture();
+void testNoCaptureMoves();
+void testGenerateCaptureMoves(){
+    testPawnCapture();
+    testKnightCapture();
+    testMultipleCaptures();
+    testPromotionCapture();
+    testEnPassantCapture();
+    testNoCaptureMoves();
+}
+
+
 int main() {
     
 
@@ -67,7 +141,8 @@ int main() {
     testSquareAttackedByKnight();
     runPawnTests();
     testCastlingMoves();
-    
+    testGenerateCaptureMoves();
+
     return 0;
 }
 
@@ -822,4 +897,232 @@ void testPawnDoubleMove() {
     assert(move_list.size() == expected_move_count);
 
     std::cout << "Test passed.\n\n";
+}
+
+
+// Helper function to set a piece on the board
+void setPiece(Board& board, const std::string& square, int piece) {
+    int sq = algebraicToSquare(square);
+    set_bit(board.bitboards[piece], sq);
+    board.updateOccupancies();
+}
+
+// Test 1: Pawn Capture
+void testPawnCapture() {
+    Board board;
+    board.resetBoard();
+    
+    // Clear the board
+    for (int i = 0; i < 12; ++i) {
+        board.bitboards[i] = 0ULL;
+    }
+    board.updateOccupancies();
+    
+    // Place a white pawn on e4 and a black pawn on d5
+    set_bit(board.bitboards[WHITE_PAWN], algebraicToSquare("e4"));
+    set_bit(board.bitboards[BLACK_PAWN], algebraicToSquare("d5"));
+    board.side = WHITE;
+    board.updateOccupancies();
+    
+    MoveGenerator moveGenerator;
+    std::vector<Move> capture_moves;
+    moveGenerator.generateAllCaptureMoves(board, capture_moves);
+    
+    std::cout << "Test 1: Pawn Capture\n";
+    board.printBoard();
+    
+    // Expected: 1 capture move (e4xd5)
+    assert(capture_moves.size() == 1);
+    Move expectedMove = fromUCI("e4d5", board);
+    assert(capture_moves[0] == expectedMove);
+    
+    std::cout << "Generated capture moves (" << capture_moves.size() << "):\n";
+    for (const Move& move : capture_moves) {
+        std::cout << toUCI(move) << "\n";
+    }
+    std::cout << "Test 1 passed.\n\n";
+}
+
+// Test 2: Knight Capture
+void testKnightCapture() {
+    Board board;
+    board.resetBoard();
+    
+    // Clear the board
+    for (int i = 0; i < 12; ++i) {
+        board.bitboards[i] = 0ULL;
+    }
+    board.updateOccupancies();
+    
+    // Place a white knight on f3 and a black bishop on e5
+    set_bit(board.bitboards[WHITE_KNIGHT], algebraicToSquare("f3"));
+    set_bit(board.bitboards[BLACK_BISHOP], algebraicToSquare("e5"));
+    board.side = WHITE;
+    board.updateOccupancies();
+    
+    MoveGenerator moveGenerator;
+    std::vector<Move> capture_moves;
+    moveGenerator.generateAllCaptureMoves(board, capture_moves);
+    
+    std::cout << "Test 2: Knight Capture\n";
+    board.printBoard();
+    
+    // Expected: 1 capture move (Nf3xe5)
+    assert(capture_moves.size() == 1);
+    Move expectedMove = fromUCI("f3e5", board);
+    assert(capture_moves[0] == expectedMove);
+    
+    std::cout << "Generated capture moves (" << capture_moves.size() << "):\n";
+    for (const Move& move : capture_moves) {
+        std::cout << toUCI(move) << "\n";
+    }
+    std::cout << "Test 2 passed.\n\n";
+}
+
+// Test 3: Multiple Capture Moves
+void testMultipleCaptures() {
+    Board board;
+    board.resetBoard();
+    
+    // Clear the board
+    for (int i = 0; i < 12; ++i) {
+        board.bitboards[i] = 0ULL;
+    }
+    board.updateOccupancies();
+    
+    // Place a white rook on a1 and black pawns on a3 and a4
+    set_bit(board.bitboards[WHITE_ROOK], algebraicToSquare("a1"));
+    set_bit(board.bitboards[BLACK_PAWN], algebraicToSquare("a3"));
+    set_bit(board.bitboards[BLACK_PAWN], algebraicToSquare("b1"));
+    board.side = WHITE;
+    board.updateOccupancies();
+    
+    MoveGenerator moveGenerator;
+    std::vector<Move> capture_moves;
+    moveGenerator.generateAllCaptureMoves(board, capture_moves);
+    
+    std::cout << "Test 3: Multiple Captures\n";
+    board.printBoard();
+    
+    assert(capture_moves.size() == 2);
+    Move expectedMove1 = fromUCI("a1a3", board);
+    Move expectedMove2 = fromUCI("a1b1", board);
+    assert((capture_moves[0] == expectedMove1 || capture_moves[0] == expectedMove2));
+    assert((capture_moves[1] == expectedMove1 || capture_moves[1] == expectedMove2));
+    
+    std::cout << "Generated capture moves (" << capture_moves.size() << "):\n";
+    for (const Move& move : capture_moves) {
+        std::cout << toUCI(move) << "\n";
+    }
+    std::cout << "Test 3 passed.\n\n";
+}
+
+// Test 4: Promotion with Capture
+void testPromotionCapture() {
+    Board board;
+    board.resetBoard();
+    
+    // Clear the board
+    for (int i = 0; i < 12; ++i) {
+        board.bitboards[i] = 0ULL;
+    }
+    board.updateOccupancies();
+    
+    // Place a white pawn on h7 and a black rook on h8
+    set_bit(board.bitboards[WHITE_PAWN], algebraicToSquare("h7"));
+    set_bit(board.bitboards[BLACK_ROOK], algebraicToSquare("g8"));
+    board.side = WHITE;
+    board.updateOccupancies();
+    
+    MoveGenerator moveGenerator;
+    std::vector<Move> capture_moves;
+    moveGenerator.generateAllCaptureMoves(board, capture_moves);
+    
+    std::cout << "Test 4: Promotion with Capture\n";
+    board.printBoard();
+    
+    std::cout << "Generated capture moves (" << capture_moves.size() << "):\n";
+    for (const Move& move : capture_moves) {
+        std::cout << toUCI(move) << "\n";
+    }
+
+    // Expected: 4 capture moves (h7xh8=Q, h7xh8=R, etc)
+    assert(capture_moves.size() == 4);
+    assert(capture_moves[0].from_square == algebraicToSquare("h7"));
+    assert(capture_moves[0].to_square == algebraicToSquare("g8"));
+    assert(capture_moves[0].captured_piece == BLACK_ROOK);
+    assert(capture_moves[0].promoted_piece == WHITE_QUEEN); // Assuming WHITE_QUEEN is the enum for queen
+    
+
+    std::cout << "Test 4 passed.\n\n";
+}
+
+// Test 5: En Passant Capture
+void testEnPassantCapture() {
+    Board board;
+    board.resetBoard();
+    
+    // Clear the board
+    for (int i = 0; i < 12; ++i) {
+        board.bitboards[i] = 0ULL;
+    }
+    board.updateOccupancies();
+    
+    // Place a white pawn on e5 and a black pawn on d5
+    set_bit(board.bitboards[WHITE_PAWN], algebraicToSquare("e5"));
+    set_bit(board.bitboards[BLACK_PAWN], algebraicToSquare("d5"));
+    board.side = WHITE;
+    board.en_passant = algebraicToSquare("d6"); // Black just moved pawn d7-d5
+    board.updateOccupancies();
+    
+    MoveGenerator moveGenerator;
+    std::vector<Move> capture_moves;
+    moveGenerator.generateAllCaptureMoves(board, capture_moves);
+    
+    std::cout << "Test 5: En Passant Capture\n";
+    board.printBoard();
+    
+    // Expected: 1 en passant capture move (e5xd6)
+    assert(capture_moves.size() == 1);
+    assert(capture_moves[0].from_square == algebraicToSquare("e5"));
+    assert(capture_moves[0].to_square == algebraicToSquare("d6"));
+    assert(capture_moves[0].captured_piece == BLACK_PAWN); // Assuming en passant capture is recorded as capturing a pawn
+    assert(capture_moves[0].flags & 2); // Assuming flag 2 is for promotion, adjust accordingly if you have specific flags for en passant
+    
+    std::cout << "Generated capture moves (" << capture_moves.size() << "):\n";
+    for (const Move& move : capture_moves) {
+        std::cout << toUCI(move) << "\n";
+    }
+    std::cout << "Test 5 passed.\n\n";
+}
+
+// Test 6: No Capture Moves
+void testNoCaptureMoves() {
+    Board board;
+    board.resetBoard();
+    
+    // Clear the board
+    for (int i = 0; i < 12; ++i) {
+        board.bitboards[i] = 0ULL;
+    }
+    board.updateOccupancies();
+    
+    // Place a white rook on a1 and a white pawn on a2
+    set_bit(board.bitboards[WHITE_ROOK], algebraicToSquare("a1"));
+    set_bit(board.bitboards[WHITE_PAWN], algebraicToSquare("a2"));
+    board.side = WHITE;
+    board.updateOccupancies();
+    
+    MoveGenerator moveGenerator;
+    std::vector<Move> capture_moves;
+    moveGenerator.generateAllCaptureMoves(board, capture_moves);
+    
+    std::cout << "Test 6: No Capture Moves\n";
+    board.printBoard();
+    
+    // Expected: 0 capture moves
+    assert(capture_moves.empty());
+    
+    std::cout << "Generated capture moves (" << capture_moves.size() << "): None\n";
+    std::cout << "Test 6 passed.\n\n";
 }

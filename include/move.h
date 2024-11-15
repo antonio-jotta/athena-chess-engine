@@ -47,7 +47,16 @@ struct Move{
     Move()
         : from_square(-1), to_square(-1), piece(NO_PIECE),
           captured_piece(NO_PIECE), promoted_piece(NO_PIECE), flags(FLAG_NONE) {}
-    
+    // Equality Operator
+    bool operator==(const Move& other) const {
+        return from_square == other.from_square &&
+               to_square == other.to_square &&
+               piece == other.piece &&
+               captured_piece == other.captured_piece &&
+               promoted_piece == other.promoted_piece &&
+               flags == other.flags;
+    }
+
 };  
 
 #endif

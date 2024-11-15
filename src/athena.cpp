@@ -4,6 +4,7 @@
 #include "search.h"
 #include <iostream>
 #include <string>
+#include <chrono>
 
 Move fromUCI(const std::string& moveStr, const Board& board);
 std::string toUCI(const Move& move);
@@ -12,10 +13,10 @@ bool isGameOver(Board& board, MoveGenerator moveGenerator, std::vector<Move> mov
 int main() {
     Board board;
     board.resetBoard();
-    // board.loadFEN("3b4/8/7p/5K1k/8/6p1/6P1/2R5 w - - 0 1");
+    //board.loadFEN("3b4/8/7p/5K1k/8/6p1/6P1/2R5 w - - 0 1");
     board.printBoard();
 
-    int depth = 3; // Set the search depth
+    int depth = 6; // Set the search depth
 
     // Choose sides
     char humanSideInput;
@@ -27,6 +28,8 @@ int main() {
         humanSide = WHITE;
     } else if (humanSideInput == 'b' || humanSideInput == 'B') {
         humanSide = BLACK;
+    }else if (humanSideInput == 'q' || humanSideInput == 'Q'){
+        return 0;
     } else {
         std::cout << "Invalid input. Defaulting to White for human.\n";
         humanSide = WHITE;
@@ -50,7 +53,7 @@ int main() {
             std::cout << "Enter your move (e.g., e2e4 or 'q' to quit): ";
             std::cin >> userMoveStr;
 
-            if (userMoveStr == "q") {
+            if (userMoveStr == "q" || userMoveStr == "Q") {
                 std::cout << "You quit the game.\n";
                 break;
             }
@@ -76,8 +79,13 @@ int main() {
             board.printBoard();
         } else {
             // Engine move
+            auto start = std::chrono::high_resolution_clock::now();
             Move engineMove = Search::findBestMove(board, depth);
+            auto stop = std::chrono::high_resolution_clock::now();
+            auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
+
             std::cout << "Engine plays: " << toUCI(engineMove) << "\n";
+            std::cout << "Search Duration: " << duration.count() << "s\n";
 
             board.makeMove(engineMove);
             board.printBoard();

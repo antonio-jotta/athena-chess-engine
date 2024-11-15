@@ -38,6 +38,7 @@ class MoveGenerator{
             int opponent_side,
             int piece_type);
         void generateAllLegalMoves(const Board& board, std::vector<Move>& move_list);
+        void generateAllCaptureMoves(const Board& board, std::vector<Move>& move_list);
         bool isKingInCheck(const Board& board, int side);
         bool isSquareAttackedByPawn(const Board& board, int square, int opponent_side);
         bool isSquareAttackedByKnight(const Board& board, int square, int opponent_side);

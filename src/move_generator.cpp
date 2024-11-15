@@ -37,6 +37,20 @@ void MoveGenerator::generateAllLegalMoves(const Board& board, std::vector<Move>&
     }
 }
 
+void MoveGenerator::generateAllCaptureMoves(const Board& board, std::vector<Move>& move_list) {
+    // Generate all legal moves first
+    std::vector<Move> all_moves;
+    generateAllLegalMoves(board, all_moves);
+    
+    // Iterate through all moves and select only the capture moves
+    for (const Move& move : all_moves) {
+        if (move.captured_piece != NO_PIECE) {
+            move_list.push_back(move);
+        }
+    }
+}
+
+
 
 void MoveGenerator::generatePawnMoves(const Board& board, std::vector<Move>& move_list) {
     int side = board.side;
