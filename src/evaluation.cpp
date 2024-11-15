@@ -163,16 +163,5 @@ int Evaluation::mobilityScore(const Board& board) {
     int whiteMobility = whiteMoves.size();
     int blackMobility = blackMoves.size();
 
-    if(moveGenerator.isKingInCheck(whiteBoard, WHITE)){
-        if(whiteMoves.empty()){
-            return static_cast<int>(std::numeric_limits<int>::min());
-        }
-    }
-    else if(moveGenerator.isKingInCheck(blackBoard, BLACK)){
-        if(blackMoves.empty()){
-            return static_cast<int>(std::numeric_limits<int>::max());
-        }
-    }
-
     return static_cast<int>(MOBILITY_WEIGHT * (whiteMobility - blackMobility));
 }

@@ -12,62 +12,75 @@ bool isGameOver(Board& board, MoveGenerator moveGenerator, std::vector<Move> mov
 int main() {
     Board board;
     board.resetBoard();
+    // board.loadFEN("3b4/8/7p/5K1k/8/6p1/6P1/2R5 w - - 0 1");
     board.printBoard();
 
     int depth = 3; // Set the search depth
 
+    // Choose sides
+    char humanSideInput;
+    Side humanSide;
+    std::cout << "Choose your side (w for White, b for Black): ";
+    std::cin >> humanSideInput;
+
+    if (humanSideInput == 'w' || humanSideInput == 'W') {
+        humanSide = WHITE;
+    } else if (humanSideInput == 'b' || humanSideInput == 'B') {
+        humanSide = BLACK;
+    } else {
+        std::cout << "Invalid input. Defaulting to White for human.\n";
+        humanSide = WHITE;
+    }
+
     while (true) {
-        
         // Generate every move available for the current position
         MoveGenerator moveGenerator;
         std::vector<Move> move_list;
         moveGenerator.generateAllLegalMoves(board, move_list);
 
-        // Human move
-        std::string userMoveStr;
-        std::cout << "Enter your move (e.g., e2e4): ";
-        std::cin >> userMoveStr;
-        
-        if(userMoveStr == "q"){
-            break;
-        }
-
-        Move userMove = fromUCI(userMoveStr, board);
-        // Check if the user's move is in the list of legal moves
-        bool isValidMove = false;
-        for (const Move& move : move_list) {
-            // Comparing strings because of flags in move will not match
-            if (toUCI(move) == userMoveStr) {
-                isValidMove = true;
-                break;
-            }
-        }
-
-        if (!isValidMove) {
-            std::cout << "Invalid move. Try again.\n";
-            continue;
-        }
-
-        board.makeMove(userMove);
-        board.printBoard();
-
-        // Check for game over conditions after human move
+        // Check for game over conditions
         if (isGameOver(board, moveGenerator, move_list)) {
             std::cout << "Game over!\n";
             break;
         }
 
-        // Engine move
-        Move engineMove = Search::findBestMove(board, depth);
-        std::cout << "Engine plays: " << toUCI(engineMove) << "\n";
+        if (board.side == humanSide) {
+            // Human move
+            std::string userMoveStr;
+            std::cout << "Enter your move (e.g., e2e4 or 'q' to quit): ";
+            std::cin >> userMoveStr;
 
-        board.makeMove(engineMove);
-        board.printBoard();
+            if (userMoveStr == "q") {
+                std::cout << "You quit the game.\n";
+                break;
+            }
 
-        // Check for game over conditions after engine move
-        if (isGameOver(board, moveGenerator, move_list)){
-            std::cout << "Game over!\n";
-            break;
+            Move userMove = fromUCI(userMoveStr, board);
+
+            // Check if the user's move is in the list of legal moves
+            bool isValidMove = false;
+            for (const Move& move : move_list) {
+                if (toUCI(move) == userMoveStr) {
+                    isValidMove = true;
+                    userMove = move; // Use the full move object
+                    break;
+                }
+            }
+
+            if (!isValidMove) {
+                std::cout << "Invalid move. Try again.\n";
+                continue;
+            }
+
+            board.makeMove(userMove);
+            board.printBoard();
+        } else {
+            // Engine move
+            Move engineMove = Search::findBestMove(board, depth);
+            std::cout << "Engine plays: " << toUCI(engineMove) << "\n";
+
+            board.makeMove(engineMove);
+            board.printBoard();
         }
     }
 
