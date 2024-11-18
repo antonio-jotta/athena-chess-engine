@@ -35,6 +35,38 @@ int Evaluation::materialScore(const Board& board) {
     return score;
 }
 
+int Evaluation::getPieceValue(const int piece) {
+    switch(piece) {
+        case WHITE_KING:
+        case BLACK_KING:
+            return KING_VALUE;
+
+        case WHITE_QUEEN:
+        case BLACK_QUEEN:
+            return QUEEN_VALUE;
+
+        case WHITE_ROOK:
+        case BLACK_ROOK:
+            return ROOK_VALUE;
+
+        case WHITE_BISHOP:
+        case BLACK_BISHOP:
+            return BISHOP_VALUE;
+
+        case WHITE_KNIGHT:
+        case BLACK_KNIGHT:
+            return KNIGHT_VALUE;
+
+        case WHITE_PAWN:
+        case BLACK_PAWN:
+            return PAWN_VALUE;
+
+        default:
+            return 0; // For empty squares or invalid pieces
+    }
+}
+
+
 int Evaluation::scorePawnStructure(const Board& board, int side) {
     U64 pawns = board.bitboards[side == WHITE ? WHITE_PAWN : BLACK_PAWN];
     int score = 0;

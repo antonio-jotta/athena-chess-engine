@@ -72,30 +72,11 @@ void Board::makeMove(const Move& move, bool switch_side) {
 
 
 void Board::resetBoard() {
-    // Clear all bitboards
-    for (int i = 0; i < 12; i++)
-        bitboards[i] = 0ULL;
-
-    // Set up the starting position
-    bitboards[WHITE_PAWN]   = 0x000000000000FF00ULL; // Pawns on rank 2
-    bitboards[WHITE_KNIGHT] = 0x0000000000000042ULL; // Knights on b1 and g1
-    bitboards[WHITE_BISHOP] = 0x0000000000000024ULL; // Bishops on c1 and f1
-    bitboards[WHITE_ROOK]   = 0x0000000000000081ULL; // Rooks on a1 and h1
-    bitboards[WHITE_QUEEN]  = 0x0000000000000010ULL; // Queen on d1
-    bitboards[WHITE_KING]   = 0x0000000000000008ULL; // King on e1
-
-    bitboards[BLACK_PAWN]   = 0x00FF000000000000ULL; // Pawns on rank 7
-    bitboards[BLACK_KNIGHT] = 0x4200000000000000ULL; // Knights on b8 and g8
-    bitboards[BLACK_BISHOP] = 0x2400000000000000ULL; // Bishops on c8 and f8
-    bitboards[BLACK_ROOK]   = 0x8100000000000000ULL; // Rooks on a8 and h8
-    bitboards[BLACK_QUEEN]  = 0x1000000000000000ULL; // Queen on d8
-    bitboards[BLACK_KING]   = 0x0800000000000000ULL; // King on e8
+    // FEN for the initial position
+    loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
     // Update occupancies
     updateOccupancies();
-
-    // Set side to move
-    side = WHITE;
 
     // No en passant square initially
     en_passant = -1;
@@ -443,5 +424,3 @@ std::string Board::getCastlingRightsString() const {
     
     return rights.empty() ? "None" : rights;
 }
-
-

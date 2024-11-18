@@ -13,10 +13,18 @@ bool isGameOver(Board& board, MoveGenerator moveGenerator, std::vector<Move> mov
 int main() {
     Board board;
     board.resetBoard();
-    //board.loadFEN("3b4/8/7p/5K1k/8/6p1/6P1/2R5 w - - 0 1");
+    // board.loadFEN("3b4/8/7p/5K1k/8/6p1/6P1/2R5 w - - 0 1");
+
+    // Analyze this game and send the king to g6 to see if it checkmates
+    //board.loadFEN("4r1k1/4r1p1/8/p2R1P1K/5P1P/1QP3q1/1P6/3R4 b - - 0 1");
+    
+    // Not checkmate?
+    // board.loadFEN("4r1k1/4r1p1/6K1/p2R1P2/5P1P/1QP2q2/1P6/3R4 b - - 10 6");
+
+
     board.printBoard();
 
-    int depth = 6; // Set the search depth
+    int depth = 2; // Set the search depth
 
     // Choose sides
     char humanSideInput;
@@ -52,6 +60,19 @@ int main() {
             std::string userMoveStr;
             std::cout << "Enter your move (e.g., e2e4 or 'q' to quit): ";
             std::cin >> userMoveStr;
+            
+            if(move_list.empty()){
+                std::cout << "IM EMPTY";
+            }
+            for (const Move& move : move_list) {
+                // std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << "\n";
+            }
+
+                    // Check for game over conditions
+            if (isGameOver(board, moveGenerator, move_list)) {
+                std::cout << "Game over!\n";
+                break;
+            }
 
             if (userMoveStr == "q" || userMoveStr == "Q") {
                 std::cout << "You quit the game.\n";

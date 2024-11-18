@@ -7,14 +7,15 @@
 class Evaluation {
 public:
     static int evaluatePosition(const Board& board);
+    static int getPieceValue(const int piece);
     static bool isIsolatedPawn(const Board& board, int square, int side);
     static bool isConnectedPawn(const Board& board, int square, int side);
     static bool isDoubledPawn(const Board& board, int square, int side);
     static bool isPassedPawn(const Board& board, int square, int side);
     static bool isCentralSquare(int square);
-
+    
     // Piece values
-    static constexpr int KING_VALUE = 20000;
+    static constexpr int KING_VALUE = 2000000;
     static constexpr int QUEEN_VALUE = 900;
     static constexpr int ROOK_VALUE = 500;
     static constexpr int BISHOP_VALUE = 300;
