@@ -174,7 +174,8 @@ int main() {
     // testCastlingMoves();
     // testGenerateCaptureMoves();
     // run3fold50moveTests();
-    testKingMoveIntoCheck();
+    // testKingMoveIntoCheck();
+    testEnPassant();
     return 0;
 }
 
@@ -848,6 +849,7 @@ void testPawnPromotions() {
 
 
 void testEnPassant() {
+
     // Initialize board
     Board board;
     board.resetBoard();
@@ -858,36 +860,51 @@ void testEnPassant() {
     }
     board.updateOccupancies();
 
-    // Place a white pawn on e5 (square 28) and a black pawn on d5 (square 27)
+    // Place a black pawn on d7 and a white pawn on e5
+    set_bit(board.bitboards[BLACK_PAWN], D7);
     set_bit(board.bitboards[WHITE_PAWN], E5);
-    set_bit(board.bitboards[BLACK_PAWN], D5);
-    board.side = WHITE;
-    board.en_passant = 27; // D5 is the en passant target
     board.updateOccupancies();
+    board.side = BLACK;
 
-    // Generate legal moves
+    // Simulate black pawn moving from d7 to d5
+    Move blackPawnDoublePush(D7, D5, BLACK_PAWN, NO_PIECE, NO_PIECE, FLAG_PAWN_DOUBLE_PUSH);
+    board.makeMove(blackPawnDoublePush);
+
+    // Now it's White's turn
+    board.side = WHITE;
+
+    // Generate legal moves for White
     MoveGenerator moveGenerator;
     std::vector<Move> move_list;
 
     std::cout << "Test: En Passant\n";
+    board.printBoard();
 
     moveGenerator.generatePawnMoves(board, move_list);
 
     std::cout << "Generated moves (" << move_list.size() << "):\n";
     for (const Move& move : move_list) {
         std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square);
-        if (move.flags & FLAG_EN_PASSANT) {
-            std::cout << " (En Passant)";
-        }
+
         std::cout << "\n";
     }
 
-    // Expected moves: 1 en passant capture move
-    size_t expected_move_count = 1;
+    // Expected moves: normal move and en passant capture
+    size_t expected_move_count = 2;
     assert(move_list.size() == expected_move_count);
+
+    // Now, make the en passant move
+    for (const Move& move : move_list) {
+        if (move.flags & FLAG_CAPTURE) {
+            board.makeMove(move);
+            break;
+        }
+    }
+    board.printBoard();
 
     std::cout << "Test passed.\n\n";
 }
+
 
 
 void testPawnDoubleMove() {

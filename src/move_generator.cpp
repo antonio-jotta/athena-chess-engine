@@ -187,7 +187,7 @@ void MoveGenerator::generatePawnMoves(const Board& board, std::vector<Move>& mov
                             pawn_piece,
                             (opponent_side == WHITE) ? WHITE_PAWN : BLACK_PAWN,
                             NO_PIECE,
-                            FLAG_EN_PASSANT
+                            FLAG_EN_PASSANT | FLAG_CAPTURE
                         );
                     }
                 }

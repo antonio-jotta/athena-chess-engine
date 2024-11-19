@@ -24,12 +24,23 @@ Board::Board() {
 }
 
 void Board::makeMove(const Move& move, bool switch_side) {
+
     // Remove the piece from the from_square
     clear_bit(bitboards[move.piece], move.from_square);
 
     // If it's a capture, remove the captured piece
+    // Handle captures
     if (move.flags & FLAG_CAPTURE) {
-        clear_bit(bitboards[move.captured_piece], move.to_square);
+        if (move.flags & FLAG_EN_PASSANT) {
+            // En passant capture
+            int captured_pawn_square = move.to_square + ((side == WHITE) ? -8 : +8);
+            int captured_pawn_piece = (side == WHITE) ? BLACK_PAWN : WHITE_PAWN;
+            clear_bit(bitboards[captured_pawn_piece], captured_pawn_square);
+            clear_bit(occupancies[(side == WHITE) ? BLACK : WHITE], captured_pawn_square);
+        } else {
+            // Normal capture
+            clear_bit(bitboards[move.captured_piece], move.to_square);
+        }
     }
 
     // Handle promotions
@@ -142,33 +153,9 @@ void Board::resetBoard() {
 }
 
 void Board::setInitialPosition() {
+    resetBoard();
     // FEN for the initial position
     loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-
-    // Update occupancies
-    updateOccupancies();
-
-    // Initialize the zobrist keys for the 3 fold repetition
-    initZobristKeys();
-
-    // Compute the initial Zobrist hash
-    computeHash();
-
-    // No en passant square initially
-    en_passant = -1;
-
-    // All castling rights available
-    castling_rights = CASTLE_WHITE_KING_SIDE | CASTLE_WHITE_QUEEN_SIDE |
-                      CASTLE_BLACK_KING_SIDE | CASTLE_BLACK_QUEEN_SIDE;
-
-    // Reset the halfmove clock and move number
-    halfmove_clock = 0;
-    move_number = 1;
-
-
-    // Clear the repetition history
-    repetition_counts.clear();
-    non_pawn_move_history.clear();
 }
 
 
