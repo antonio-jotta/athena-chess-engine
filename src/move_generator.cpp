@@ -383,7 +383,6 @@ bool MoveGenerator::isKingInCheck(const Board& board, int side) {
 
     // Generate attack bitboards for opponent
     int opponent_side = (side == WHITE) ? BLACK : WHITE;
-
     // Check for attacks from pawns, knights, bishops, rooks, queens, and the opponent's king
     if (isSquareAttackedByPawn(board, king_square, opponent_side)) return true;
     if (isSquareAttackedByKnight(board, king_square, opponent_side)) return true;
@@ -725,32 +724,28 @@ bool MoveGenerator::isSquareAttackedByQueen(const Board& board, int square, int 
 
 bool MoveGenerator::isSquareAttackedByKing(const Board& board, int square, int opponent_side){
     U64 kings = board.bitboards[(opponent_side == WHITE) ? WHITE_KING : BLACK_KING];
+    
+    while (kings) {
+        int king_square = bitscanForward(kings);
+        clear_bit(kings, king_square);
 
-    while(kings){
-        int piece_square = bitscanForward(kings);
-        clear_bit(kings, piece_square);
-        const int directions[8] = {NORTH, SOUTH, EAST, WEST, NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
-        for(int dir = 0; dir < 8; ++dir){
-            int to_square = piece_square;
-            to_square += directions[dir];
-            // std::cout << "Checking square: " << squareToAlgebraic(to_square) << "\n";
-            if (to_square < 0 || to_square >= 64 || isBoundaryCrossed(piece_square, to_square, directions[dir])) {
-                break;
+        const int directions[8] = { NORTH, SOUTH, EAST, WEST, NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST };
+        
+        for (int dir = 0; dir < 8; ++dir) {
+            int to_square = king_square + directions[dir];
+
+            if (to_square < 0 || to_square >= 64 || isBoundaryCrossed(king_square, to_square, directions[dir])) {
+                continue; // Can't move in this direction
             }
-            if (get_bit(board.occupancies[BOTH], to_square)) {
-                    if (to_square == square) {
-                        return true; // Target square is attacked
-                    }
-                    break; // Blocked by other piece
-                }
-
-                if (to_square == square) {
-                    return true; // Target square is attacked
-                }
+            
+            if (to_square == square) {
+                return true; // Target square is attacked by the king
+            }
         }
     }
     return false;
 }
+
 
 
 bool MoveGenerator::isBoundaryCrossed(int from_square, int to_square, int direction_offset) {

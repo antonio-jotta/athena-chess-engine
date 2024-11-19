@@ -1,5 +1,20 @@
 #include "board.h"
 
+std::string toUCI2(const Move& move) {
+    std::string uci = squareToAlgebraic(move.from_square) + squareToAlgebraic(move.to_square);
+    if (move.promoted_piece != NO_PIECE) {
+        char promo = (move.promoted_piece == WHITE_QUEEN || move.promoted_piece == BLACK_QUEEN)
+                         ? 'q'
+                         : (move.promoted_piece == WHITE_ROOK || move.promoted_piece == BLACK_ROOK)
+                               ? 'r'
+                               : (move.promoted_piece == WHITE_BISHOP || move.promoted_piece == BLACK_BISHOP)
+                                     ? 'b'
+                                     : 'n';
+        uci += promo;
+    }
+    return uci;
+}
+
 ///////////////////////
 /// Board functions ///
 ///////////////////////
@@ -59,24 +74,85 @@ void Board::makeMove(const Move& move, bool switch_side) {
     // Update castling rights
     updateCastlingRights(move);
 
-    // Increment the move number if Black has just moved
+    // Update the move number if Black has just moved
     if (side == BLACK) {
         move_number++;
     }
 
-    // Update side to move
+    // Update the 50-move counter
+    if (isPawnMove(move.piece) || (move.flags & FLAG_CAPTURE)) {
+        // Reset the halfmove clock if a pawn was moved or a capture occurred
+        halfmove_clock = 0;
+    } else {
+        // Increment the halfmove clock otherwise
+        halfmove_clock++;
+    }
+
+    // Check for game-ending conditions
+    if (isThreefoldRepetition()) {
+        DRAW = 1;
+    }
+
+    if (isFiftyMoveRule()) {
+        DRAW = 1;
+    }
+
+    // **Switch the side to move before updating the hash and repetition history**
     if (switch_side) {
         side = (side == WHITE) ? BLACK : WHITE;
     }
+
+    // Update the hash key based on the move
+    updateHash(move);
+
+    // Update the repetition history based on the move
+    updateRepetitionHistory(move);
 }
 
 
+// Set an empty board
 void Board::resetBoard() {
+    // FEN for the initial position
+    loadFEN("8/8/8/8/8/8/8/8 w - - 0 1");
+
+    // Update occupancies
+    updateOccupancies();
+
+    // Initialize the zobrist keys for the 3 fold repetition
+    initZobristKeys();
+
+    // Compute the initial Zobrist hash
+    computeHash();
+    
+    // No en passant square initially
+    en_passant = -1;
+
+    // All castling rights available
+    castling_rights = CASTLE_WHITE_KING_SIDE | CASTLE_WHITE_QUEEN_SIDE |
+                      CASTLE_BLACK_KING_SIDE | CASTLE_BLACK_QUEEN_SIDE;
+
+    // Reset the halfmove clock and move number
+    halfmove_clock = 0;
+    move_number = 1;
+
+    // Clear the repetition history
+    repetition_counts.clear();
+    non_pawn_move_history.clear();
+
+}
+
+void Board::setInitialPosition() {
     // FEN for the initial position
     loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
     // Update occupancies
     updateOccupancies();
+
+    // Initialize the zobrist keys for the 3 fold repetition
+    initZobristKeys();
+
+    // Compute the initial Zobrist hash
+    computeHash();
 
     // No en passant square initially
     en_passant = -1;
@@ -84,6 +160,15 @@ void Board::resetBoard() {
     // All castling rights available
     castling_rights = CASTLE_WHITE_KING_SIDE | CASTLE_WHITE_QUEEN_SIDE |
                       CASTLE_BLACK_KING_SIDE | CASTLE_BLACK_QUEEN_SIDE;
+
+    // Reset the halfmove clock and move number
+    halfmove_clock = 0;
+    move_number = 1;
+
+
+    // Clear the repetition history
+    repetition_counts.clear();
+    non_pawn_move_history.clear();
 }
 
 
@@ -424,3 +509,145 @@ std::string Board::getCastlingRightsString() const {
     
     return rights.empty() ? "None" : rights;
 }
+
+// Static member definitions
+U64 Board::piece_keys[12][64];
+U64 Board::side_key;
+U64 Board::enpassant_keys[64];
+U64 Board::castling_keys[16];
+
+void Board::initZobristKeys() {
+    std::mt19937_64 rng(std::random_device{}());
+    std::uniform_int_distribution<U64> dist(0, UINT64_MAX);
+
+    // Initialize piece keys
+    for (int piece = 0; piece < 12; ++piece) {
+        for (int square = 0; square < 64; ++square) {
+            piece_keys[piece][square] = dist(rng);
+        }
+    }
+
+    // Initialize side key
+    side_key = dist(rng);
+
+    // Initialize en passant keys
+    for (int square = 0; square < 64; ++square) {
+        enpassant_keys[square] = dist(rng);
+    }
+
+    // Initialize castling keys
+    for (int i = 0; i < 16; ++i) {
+        castling_keys[i] = dist(rng);
+    }
+}
+
+
+void Board::updateHash(const Move& move) {
+    // Remove moving piece from from_square
+    hash_key ^= piece_keys[move.piece][move.from_square];
+
+    // Remove captured piece (if any)
+    if (move.flags & FLAG_CAPTURE) {
+        hash_key ^= piece_keys[move.captured_piece][move.to_square];
+    }
+
+    // Handle promotions
+    if (move.flags & FLAG_PROMOTION) {
+        // Remove pawn from to_square
+        hash_key ^= piece_keys[move.piece][move.to_square];
+        // Add promoted piece to to_square
+        hash_key ^= piece_keys[move.promoted_piece][move.to_square];
+    } else {
+        // Add moving piece to to_square
+        hash_key ^= piece_keys[move.piece][move.to_square];
+    }
+
+    // Handle en passant
+    // Remove old en passant key
+    if (en_passant != NO_SQUARE) {
+        hash_key ^= enpassant_keys[en_passant];
+    }
+
+    // Update en passant square
+    en_passant = NO_SQUARE;
+    if (isPawnMove(move.piece) && abs(move.to_square - move.from_square) == 16) {
+        // Set en passant square
+        en_passant = (move.from_square + move.to_square) / 2;
+    }
+
+    // Add new en passant key if applicable
+    if (en_passant != NO_SQUARE) {
+        hash_key ^= enpassant_keys[en_passant];
+    }
+
+    // Handle castling rights
+    // Remove old castling rights
+    hash_key ^= castling_keys[castling_rights];
+
+    // Update castling rights based on the move
+    updateCastlingRights(move);
+
+    // Add new castling rights
+    hash_key ^= castling_keys[castling_rights];
+
+    // Switch side to move in hash
+    hash_key ^= side_key;
+}
+
+
+
+bool Board::isThreefoldRepetition() const {
+    auto it = repetition_counts.find(hash_key);
+    if (it != repetition_counts.end()) {
+        return it->second >= 3;
+    }
+    return false;
+}
+
+bool Board::isPawnMove(int piece) const {
+    return piece == WHITE_PAWN || piece == BLACK_PAWN;
+}
+
+void Board::computeHash() {
+    hash_key = 0ULL;
+
+    // Piece positions
+    for (int piece = 0; piece < 12; ++piece) {
+        U64 bitboard = bitboards[piece];
+        while (bitboard) {
+            int square = bitscanForward(bitboard);
+            hash_key ^= piece_keys[piece][square];
+            bitboard &= bitboard - 1; // Remove LSB
+        }
+    }
+
+    // Side to move
+    if (side == WHITE) {
+        hash_key ^= side_key;
+    }
+
+    // En passant square
+    if (en_passant != NO_SQUARE) {
+        hash_key ^= enpassant_keys[en_passant];
+    }
+
+    // Castling rights
+    hash_key ^= castling_keys[castling_rights];
+}
+
+void Board::updateRepetitionHistory(const Move& move) {
+    if (isPawnMove(move.piece)) {
+        // If a pawn was moved, clear the repetition history
+        non_pawn_move_history.clear();
+        repetition_counts.clear();
+    } else {
+        // Add the current hash_key to the history
+        non_pawn_move_history.push_back(hash_key);
+        repetition_counts[hash_key]++;
+    }
+}
+
+bool Board::isFiftyMoveRule() const {
+    return halfmove_clock >= 100;
+}
+

@@ -18,6 +18,10 @@ int Evaluation::evaluatePosition(const Board& board){
     int pawnStructure = scorePawnStructure(board, whoToMove);
     int mobility = mobilityScore(board);
 
+    if(board.DRAW == 1){
+        return 0;
+    }
+
     // Return the evaluation relative to the side to move
     return static_cast<int>((material + pawnStructure + mobility) * whoToMove);
 }

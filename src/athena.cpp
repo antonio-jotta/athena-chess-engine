@@ -4,27 +4,25 @@
 #include "search.h"
 #include <iostream>
 #include <string>
-#include <chrono>
 
 Move fromUCI(const std::string& moveStr, const Board& board);
+
 std::string toUCI(const Move& move);
 bool isGameOver(Board& board, MoveGenerator moveGenerator, std::vector<Move> move_list);
+
 
 int main() {
     Board board;
     board.resetBoard();
-    // board.loadFEN("3b4/8/7p/5K1k/8/6p1/6P1/2R5 w - - 0 1");
-
-    // Analyze this game and send the king to g6 to see if it checkmates
-    //board.loadFEN("4r1k1/4r1p1/8/p2R1P1K/5P1P/1QP3q1/1P6/3R4 b - - 0 1");
     
-    // Not checkmate?
-    // board.loadFEN("4r1k1/4r1p1/6K1/p2R1P2/5P1P/1QP2q2/1P6/3R4 b - - 10 6");
+    board.loadFEN("4r1k1/4r1p1/8/p2R1P1K/5P1P/1QP3q1/1P6/3R4 b - - 0 1");
 
+    // mate in 4
+    //board.loadFEN("3qr2k/1p3rbp/2p3p1/p7/P2pBNn1/1P3n2/6P1/B1Q1RR1K b - - 1 30");
 
     board.printBoard();
 
-    int depth = 2; // Set the search depth
+    int depth = 6; // Set the search depth
 
     // Choose sides
     char humanSideInput;
@@ -36,18 +34,19 @@ int main() {
         humanSide = WHITE;
     } else if (humanSideInput == 'b' || humanSideInput == 'B') {
         humanSide = BLACK;
-    }else if (humanSideInput == 'q' || humanSideInput == 'Q'){
-        return 0;
     } else {
         std::cout << "Invalid input. Defaulting to White for human.\n";
         humanSide = WHITE;
     }
 
+    MoveGenerator moveGenerator;
+
     while (true) {
-        // Generate every move available for the current position
-        MoveGenerator moveGenerator;
         std::vector<Move> move_list;
         moveGenerator.generateAllLegalMoves(board, move_list);
+        // for(const Move &move: move_list){
+        //     std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << "\n";
+        // }
 
         // Check for game over conditions
         if (isGameOver(board, moveGenerator, move_list)) {
@@ -58,35 +57,23 @@ int main() {
         if (board.side == humanSide) {
             // Human move
             std::string userMoveStr;
-            std::cout << "Enter your move (e.g., e2e4 or 'q' to quit): ";
+            std::cout << "Enter your move in UCI format (e.g., e2e4 or 'q' to quit): ";
             std::cin >> userMoveStr;
-            
-            if(move_list.empty()){
-                std::cout << "IM EMPTY";
-            }
-            for (const Move& move : move_list) {
-                // std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << "\n";
-            }
 
-                    // Check for game over conditions
-            if (isGameOver(board, moveGenerator, move_list)) {
-                std::cout << "Game over!\n";
-                break;
-            }
-
-            if (userMoveStr == "q" || userMoveStr == "Q") {
+            if (userMoveStr == "q") {
                 std::cout << "You quit the game.\n";
                 break;
             }
 
+            // Convert user input to a Move object
             Move userMove = fromUCI(userMoveStr, board);
 
-            // Check if the user's move is in the list of legal moves
+            // Validate the user's move
             bool isValidMove = false;
             for (const Move& move : move_list) {
-                if (toUCI(move) == userMoveStr) {
+                if (move == userMove) {
                     isValidMove = true;
-                    userMove = move; // Use the full move object
+                    userMove = move; // Ensure all move details are accurate
                     break;
                 }
             }
@@ -96,25 +83,50 @@ int main() {
                 continue;
             }
 
+            // Make the move on the board
             board.makeMove(userMove);
             board.printBoard();
+
+            // Check for draw conditions after the move
+            if (board.isThreefoldRepetition()) {
+                std::cout << "Draw by threefold repetition!\n";
+                break;
+            }
+
+            if (board.isFiftyMoveRule()) {
+                std::cout << "Draw by the 50-move rule!\n";
+                break;
+            }
         } else {
             // Engine move
-            auto start = std::chrono::high_resolution_clock::now();
+            std::cout << "Engine is thinking...\n";
             Move engineMove = Search::findBestMove(board, depth);
-            auto stop = std::chrono::high_resolution_clock::now();
-            auto duration = std::chrono::duration_cast<std::chrono::seconds>(stop - start);
+
+            if (engineMove.from_square == -1 || engineMove.to_square == -1) {
+                std::cout << "Engine has no legal moves. Game over!\n";
+                break;
+            }
 
             std::cout << "Engine plays: " << toUCI(engineMove) << "\n";
-            std::cout << "Search Duration: " << duration.count() << "s\n";
-
             board.makeMove(engineMove);
             board.printBoard();
+
+            // Check for draw conditions after the move
+            if (board.isThreefoldRepetition()) {
+                std::cout << "Draw by threefold repetition!\n";
+                break;
+            }
+
+            if (board.isFiftyMoveRule()) {
+                std::cout << "Draw by the 50-move rule!\n";
+                break;
+            }
         }
     }
 
     return 0;
 }
+
 
 bool isGameOver(Board& board, MoveGenerator moveGenerator, std::vector<Move> move_list) {
 

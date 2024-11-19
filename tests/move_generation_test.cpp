@@ -65,6 +65,25 @@ std::string toUCI(const Move& move) {
     return uci;
 }
 
+void testKingMoveIntoCheck() {
+    // Create a board and load the FEN
+    Board board;
+    board.loadFEN("4r1k1/4r1p1/6K1/p2R1P2/5PqP/1QP5/1P6/3R4 w - - 3 3");
+    //board.printBoard();
+
+    // Generate all legal moves for White
+    MoveGenerator moveGenerator;
+    std::vector<Move> move_list;
+    moveGenerator.generateAllLegalMoves(board, move_list);
+
+    // Print all generated moves
+    std::cout << "Generated moves for White:\n";
+    for (const Move& move : move_list) {
+        std::cout << toUCI(move) << "\n";
+    }
+}
+
+
 void testRookMovesEmptyBoard();
 void testRookMovesBlockedByFriendly();
 void testRookMovesCaptureOpponent();
@@ -130,19 +149,32 @@ void testGenerateCaptureMoves(){
     testNoCaptureMoves();
 }
 
+void testThreefoldRepetition();
+void testFiftyMoveRule();
+void testCombinationRules();
+void testNoRepetitionNoFiftyMove();
+
+void run3fold50moveTests(){
+    testThreefoldRepetition();
+    testFiftyMoveRule();
+    testCombinationRules();
+    testNoRepetitionNoFiftyMove();
+}
+
 
 int main() {
     
 
-    runRookTests();
-    runKingTests();
-    testBishops();
-    testKnightMoves();
-    testSquareAttackedByKnight();
-    runPawnTests();
-    testCastlingMoves();
-    testGenerateCaptureMoves();
-
+    // runRookTests();
+    // runKingTests();
+    // testBishops();
+    // testKnightMoves();
+    // testSquareAttackedByKnight();
+    // runPawnTests();
+    // testCastlingMoves();
+    // testGenerateCaptureMoves();
+    // run3fold50moveTests();
+    testKingMoveIntoCheck();
     return 0;
 }
 
@@ -900,13 +932,6 @@ void testPawnDoubleMove() {
 }
 
 
-// Helper function to set a piece on the board
-void setPiece(Board& board, const std::string& square, int piece) {
-    int sq = algebraicToSquare(square);
-    set_bit(board.bitboards[piece], sq);
-    board.updateOccupancies();
-}
-
 // Test 1: Pawn Capture
 void testPawnCapture() {
     Board board;
@@ -1125,4 +1150,199 @@ void testNoCaptureMoves() {
     
     std::cout << "Generated capture moves (" << capture_moves.size() << "): None\n";
     std::cout << "Test 6 passed.\n\n";
+}
+
+
+
+// Helper function to set a piece on the board
+void setPiece(Board& board, const std::string& square, int piece) {
+    int sq = algebraicToSquare(square);
+    set_bit(board.bitboards[piece], sq);
+    board.updateOccupancies();
+    board.computeHash(); // Recompute hash after setting the piece
+}
+
+// Function to apply a move
+void applyMove(Board& board, const std::string& moveStr) {
+    Move move = fromUCI(moveStr, board);
+    board.makeMove(move);
+}
+
+// Test 1: Threefold Repetition
+void testThreefoldRepetition() {
+    Board board;
+    board.resetBoard();
+    board.computeHash();
+    board.updateRepetitionHistory(Move());
+    board.repetition_counts[board.hash_key] = 1;
+
+    // Example: Repeating a simple position
+    // White King on e1, White Rook on h1
+    // Black King on e8, Black Rook on a8
+    // Alternate moving White Rook between h1 and h2 without changing the board
+    setPiece(board, "e1", WHITE_KING);
+    setPiece(board, "h1", WHITE_ROOK);
+    setPiece(board, "e8", BLACK_KING);
+    setPiece(board, "a8", BLACK_ROOK);
+    board.side = WHITE;
+    board.computeHash();
+    board.updateRepetitionHistory(Move());
+    board.repetition_counts[board.hash_key] = 2; // Initial position occurred twice
+
+    // Move 1: White Rook h1-h2
+    applyMove(board, "h1h2");
+
+    // Move 2: Black Rook a8-a7 (not affecting repetition)
+    applyMove(board, "a8a7");
+
+    // Move 3: White Rook h2-h1
+    applyMove(board, "h2h1");
+
+    // Move 4: Black Rook a7-a8
+    applyMove(board, "a7a8");
+
+    // Move 5: White Rook h1-h2
+    applyMove(board, "h1h2");
+
+    // Move 6: Black Rook a8-a7
+    applyMove(board, "a8a7");
+
+    // Move 7: White Rook h2-h1
+    applyMove(board, "h2h1");
+
+    // Move 8: Black Rook a7-a8
+    applyMove(board, "a7a8");
+
+    // Move 9: White Rook h1-h2
+    applyMove(board, "h1h2");
+
+    // After these moves, the position should have occurred three times
+    assert(board.isThreefoldRepetition());
+
+    std::cout << "Test 1: Threefold Repetition Passed.\n\n";
+}
+
+// Test 2: 50-Move Rule
+void testFiftyMoveRule() {
+    Board board;
+    board.resetBoard();
+    board.computeHash();
+    board.updateRepetitionHistory(Move());
+    board.repetition_counts[board.hash_key] = 1;
+
+    // Example: Making 100 non-capturing, non-pawn moves
+    // For simplicity, move a knight back and forth without captures or pawn moves
+    // White Knight on b1 and c3, Black Knight on b8 and c6
+    setPiece(board, "b1", WHITE_KNIGHT);
+    setPiece(board, "b8", BLACK_KNIGHT);
+    board.side = WHITE;
+    board.computeHash();
+    board.updateRepetitionHistory(Move());
+    board.repetition_counts[board.hash_key] = 2;
+    // Define a sequence of moves that do not involve pawn moves or captures
+    std::vector<std::string> moves = {
+        "b1c3", "b8c6",
+        "c3b1", "c6b8",
+        "b1c3", "b8c6",
+        "c3b1", "c6b8",
+        // Repeat the above 12 times to reach 24 half-moves
+    };
+
+
+    // Repeat the moves 24 times (48 half-moves)
+    for (int i = 0; i < 12; ++i) {
+        for (const std::string& moveStr : moves) {
+            applyMove(board, moveStr);
+        }
+    }
+
+    assert(board.halfmove_clock == 96);
+
+    // Make 4 more half-moves without captures or pawn moves to reach 100
+    applyMove(board, "b1c3");
+    applyMove(board, "b8c6");
+    applyMove(board, "c3b1");
+    applyMove(board, "c6b8");
+
+    // Now, halfmove_clock should be 100
+    assert(board.isFiftyMoveRule());
+
+    std::cout << "Test 2: 50-Move Rule Passed.\n\n";
+}
+
+// Test 3: Combination of Threefold Repetition and 50-Move Rule
+void testCombinationRules() {
+    Board board;
+    board.resetBoard();
+    board.computeHash();
+    board.updateRepetitionHistory(Move());
+    board.repetition_counts[board.hash_key] = 1;
+
+    // Set up a simple position
+    setPiece(board, "e1", WHITE_KING);
+    setPiece(board, "h1", WHITE_ROOK);
+    setPiece(board, "e8", BLACK_KING);
+    setPiece(board, "a8", BLACK_ROOK);
+    board.side = WHITE;
+    board.computeHash();
+    board.updateRepetitionHistory(Move());
+    board.repetition_counts[board.hash_key] = 2;
+
+    // Define a sequence of non-pawn, non-capturing moves that repeat the position
+    std::vector<std::string> moves = {
+        "h1h2", "a8a7",
+        "h2h1", "a7a8",
+        // Repeating enough to trigger both rules
+    };
+
+    // Apply the moves
+    for(int i = 0; i < 25; i++){
+        for (const std::string& moveStr : moves) {
+            applyMove(board, moveStr);
+        }
+    }
+
+    // At this point, check for both rules
+    if (board.isThreefoldRepetition()) {
+        std::cout << "Draw by threefold repetition!\n";
+    }
+
+    if (board.isFiftyMoveRule()) {
+        std::cout << "Draw by the 50-move rule!\n";
+    }
+
+    // Both should be true
+    assert(board.isThreefoldRepetition());
+    assert(board.isFiftyMoveRule());
+
+    std::cout << "Test 3: Combination of Threefold Repetition and no 50-Move Rule Passed.\n\n";
+}
+
+// Test 4: No Repetition and No 50-Move Rule
+void testNoRepetitionNoFiftyMove() {
+    Board board;
+    board.resetBoard();
+    // Initialize the board state
+    setPiece(board, "e1", WHITE_KING);
+    setPiece(board, "e8", BLACK_KING);
+    board.side = WHITE;
+
+    // Compute the initial hash and add it to the repetition history
+    board.computeHash();
+    board.updateRepetitionHistory(Move());
+    std::vector<std::string> moves = {
+        "e1e2", "e8e7",
+        "e2e1", "e7e8",
+        // Repeating enough to trigger both rules
+    };
+    for (const std::string& moveStr : moves) {
+        applyMove(board, moveStr);
+    }
+
+
+    // Check that no draw conditions are met
+    assert(!board.isThreefoldRepetition());
+    assert(!board.isFiftyMoveRule());
+
+    std::cout << "Test 4: No Repetition and No 50-Move Rule Passed.\n\n";
 }

@@ -13,7 +13,7 @@ Move Search::findBestMove(Board& board, int depth) {
     int bestValue = -999999;
     int alpha = -1000000;
     int beta = 1000000;
-
+    auto start = std::chrono::high_resolution_clock::now();
     for (const Move& move : move_list) {
         Board tempBoard = board;
         tempBoard.makeMove(move);
@@ -28,6 +28,10 @@ Move Search::findBestMove(Board& board, int depth) {
             alpha = bestValue;
         }
     }
+    auto end = std::chrono::high_resolution_clock::now();   
+    std::chrono::duration<double> duration = end - start;
+    std::cout << "Time taken for the search: " << duration.count() << " seconds\n";
+
     std::cout << "Leaf nodes evaluated: " << nodes_searched << std::endl;
 
     return bestMove;

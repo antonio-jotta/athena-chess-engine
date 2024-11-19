@@ -7,6 +7,7 @@
 #include "evaluation.h"
 #include <vector>
 #include <algorithm>
+#include <chrono>
 
 class Search {
 public:
