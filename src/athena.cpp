@@ -15,14 +15,16 @@ int main() {
     Board board;
     board.resetBoard();
     
-    board.loadFEN("4r1k1/4r1p1/8/p2R1P1K/5P1P/1QP3q1/1P6/3R4 b - - 0 1");
+    // board.loadFEN("4r1k1/4r1p1/8/p2R1P1K/5P1P/1QP3q1/1P6/3R4 b - - 0 1");
+    board.setInitialPosition();
+    board.loadFEN("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
     // mate in 4
     //board.loadFEN("3qr2k/1p3rbp/2p3p1/p7/P2pBNn1/1P3n2/6P1/B1Q1RR1K b - - 1 30");
 
     board.printBoard();
 
-    int depth = 6; // Set the search depth
+    int depth = 5; // Set the search depth
 
     // Choose sides
     char humanSideInput;
@@ -44,9 +46,7 @@ int main() {
     while (true) {
         std::vector<Move> move_list;
         moveGenerator.generateAllLegalMoves(board, move_list);
-        // for(const Move &move: move_list){
-        //     std::cout << squareToAlgebraic(move.from_square) << " -> " << squareToAlgebraic(move.to_square) << "\n";
-        // }
+
 
         // Check for game over conditions
         if (isGameOver(board, moveGenerator, move_list)) {
@@ -71,7 +71,7 @@ int main() {
             // Validate the user's move
             bool isValidMove = false;
             for (const Move& move : move_list) {
-                if (move == userMove) {
+                if (move.from_square == userMove.from_square && move.to_square == userMove.to_square) {
                     isValidMove = true;
                     userMove = move; // Ensure all move details are accurate
                     break;
