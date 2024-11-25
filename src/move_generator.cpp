@@ -378,6 +378,68 @@ void MoveGenerator::generateKingMoves(const Board& board, std::vector<Move>& mov
     }
 }
 
+void MoveGenerator::generateEnemyKingMoves(const Board& board, std::vector<Move>& move_list){
+    int side = board.side;
+    int opponent_side = (side == WHITE) ? BLACK : WHITE;
+    int king_piece = (opponent_side == WHITE) ? WHITE_KING : BLACK_KING;
+    U64 king = board.bitboards[king_piece];
+    int king_square = bitscanForward(king);
+    
+    while(king){
+        const int directions[8] = {NORTH, SOUTH, EAST, WEST, NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
+            // Generate moves in all directions
+        for (int dir = 0; dir < 8; ++dir) {
+            int direction_offset = directions[dir];
+            int to_square = king_square + direction_offset;
+            if (to_square < 0 || to_square >= 64 || isBoundaryCrossed(king_square, to_square, direction_offset)) {
+                //std::cout << "Boundary crossed at " << squareToAlgebraic(to_square) << "\n";
+            continue;
+            }
+            // Check if square is occupied by a friendly piece
+            if (get_bit(board.occupancies[side], to_square)) {
+                //std::cout << "Blocked by friendly piece at " << squareToAlgebraic(to_square) << "\n";
+                continue;
+            }
+            int captured_piece = NO_PIECE;
+            uint8_t flags = FLAG_NONE;
+
+            // Check if occupied by our piece
+            if (get_bit(board.occupancies[side], to_square)) {
+                captured_piece = getPieceOnSquare(board, to_square, side);
+                flags |= FLAG_CAPTURE;
+                move_list.emplace_back(king_square, to_square, king_piece, captured_piece, NO_PIECE, flags);
+                //std::cout << "Captured opponent piece at " << squareToAlgebraic(to_square) << "\n";
+                continue;
+            } else {
+                move_list.emplace_back(king_square, to_square, king_piece, NO_PIECE, NO_PIECE, flags);
+            }
+        }
+        // Generate castling moves
+        if (!isKingInCheck(board, opponent_side)) {
+            generateCastlingMoves(board, move_list, king_square, opponent_side);
+        }        
+        clear_bit(king, king_square);
+    }
+    
+    // For each move, check if it's legal
+    for (const Move& move : move_list) {
+        // Make a copy of the board
+        Board board_copy = board;
+
+        // Make the move on the copy, do not switch sides
+        board_copy.makeMove(move, false);
+        // std::cout << "Move " << squareToAlgebraic(move.from_square)<< " -> " << squareToAlgebraic(move.to_square) << "\n";
+        
+        // Check if the king is in check after the move
+        if (isKingInCheck(board_copy, opponent_side)) {
+            // Move is legal, add to move_list
+            move_list.erase(std::find(move_list.begin(), move_list.end(), move));
+        }
+    }
+}
+
+
+
 bool MoveGenerator::isKingInCheck(const Board& board, int side) {
     int king_square = bitscanForward(board.bitboards[(side == WHITE) ? WHITE_KING : BLACK_KING]);
 

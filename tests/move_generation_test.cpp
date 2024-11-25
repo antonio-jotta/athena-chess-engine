@@ -83,6 +83,21 @@ void testKingMoveIntoCheck() {
     }
 }
 
+void testEnemyKingMoves(){
+
+    Board board;
+    board.loadFEN("7k/1p4b1/2p3p1/p7/P2pr1n1/1P3Pq1/8/B3RR1K b - - 0 35");
+    // Generate all legal moves for White
+    MoveGenerator moveGenerator;
+    std::vector<Move> move_list;
+    moveGenerator.generateEnemyKingMoves(board, move_list);
+    // Print all generated moves
+    std::cout << "Generated moves for White:\n";
+    for (const Move& move : move_list) {
+        std::cout << toUCI(move) << "\n";
+    }
+}
+
 
 void testRookMovesEmptyBoard();
 void testRookMovesBlockedByFriendly();
@@ -175,7 +190,8 @@ int main() {
     // testGenerateCaptureMoves();
     // run3fold50moveTests();
     // testKingMoveIntoCheck();
-    testEnPassant();
+    // testEnPassant();
+    testEnemyKingMoves();
     return 0;
 }
 

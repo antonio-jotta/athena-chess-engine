@@ -1,5 +1,4 @@
 #include "evaluation.h"
-#include "move_generator.h"
 
 
 // ALL OF THESE ARE SUBJECT TO ADJUSTMENTS
@@ -13,6 +12,14 @@ const int ISOLATED_PAWN_PENALTY = -15;
 
 int Evaluation::evaluatePosition(const Board& board){
     int whoToMove = (board.side == WHITE) ? 1 : -1;
+    
+    MoveGenerator moveGenerator;
+    std::vector<Move> kingMoves;
+    moveGenerator.generateEnemyKingMoves(board, kingMoves);
+    if(kingMoves.empty() && moveGenerator.isKingInCheck(board, board.side)){
+        return INT_MAX;
+    }
+
 
     int material = materialScore(board);
     int pawnStructure = scorePawnStructure(board, whoToMove);

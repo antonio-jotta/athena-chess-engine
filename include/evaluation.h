@@ -3,6 +3,8 @@
 
 #include "board.h"
 #include "move.h"
+#include "move_generator.h"
+#include <limits.h>
 
 class Evaluation {
 public:
