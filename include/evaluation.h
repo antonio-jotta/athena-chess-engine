@@ -33,8 +33,21 @@ public:
     static int scorePawnStructure(const Board& board, int side);
     static int materialScore(const Board& board);
     static int mobilityScore(const Board& board);
-    
-    
+
+private:
+    // Piece-square tables for each piece type
+    static const int pawnTable[64];
+    static const int knightTable[64];
+    static const int bishopTable[64];
+    static const int rookTable[64];
+    static const int queenTable[64];
+    static const int kingMiddleGameTable[64];
+    static const int kingEndGameTable[64];
+
+    // Helper methods
+    static int pieceSquareScore(const Board& board);
+    static bool isEndGame(const Board& board);
+    static int mirrorSquare(int square);
 };
 
 

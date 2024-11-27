@@ -8,6 +8,92 @@ const int CONNECTED_PASSED_PAWN_BONUS = 30;
 const int DOUBLED_PAWN_PENALTY = -20; 
 const int ISOLATED_PAWN_PENALTY = -15; 
 
+// Piece-square tables (values for white; values for black will be mirrored)
+const int Evaluation::pawnTable[64] = {
+     0,   0,   0,   0,   0,   0,   0,   0,
+    50,  50,  50,  50,  50,  50,  50,  50,
+    10,  10,  20,  30,  30,  20,  10,  10,
+     5,   5,  10,  25,  25,  10,   5,   5,
+     0,   0,   0,  20,  20,   0,   0,   0,
+     5,  -5, -10,   0,   0, -10,  -5,   5,
+     5,  10,  10, -20, -20,  10,  10,   5,
+     0,   0,   0,   0,   0,   0,   0,   0
+};
+
+// Similarly define knightTable, bishopTable, rookTable, queenTable
+
+const int Evaluation::knightTable[64] = {
+    -50, -40, -30, -30, -30, -30, -40, -50,
+    -40, -20,   0,   0,   0,   0, -20, -40,
+    -30,   0,  10,  15,  15,  10,   0, -30,
+    -30,   5,  15,  20,  20,  15,   5, -30,
+    -30,   0,  15,  20,  20,  15,   0, -30,
+    -30,   5,  10,  15,  15,  10,   5, -30,
+    -40, -20,   0,   5,   5,   0, -20, -40,
+    -50, -40, -30, -30, -30, -30, -40, -50
+};
+
+// Continue for bishopTable, rookTable, queenTable
+
+const int Evaluation::bishopTable[64] = {
+    -20, -10, -10, -10, -10, -10, -10, -20,
+    -10,   5,   0,   0,   0,   0,   5, -10,
+    -10,  10,  10,  10,  10,  10,  10, -10,
+    -10,   0,  10,  10,  10,  10,   0, -10,
+    -10,   5,   5,  10,  10,   5,   5, -10,
+    -10,   0,   5,  10,  10,   5,   0, -10,
+    -10,   0,   0,   0,   0,   0,   0, -10,
+    -20, -10, -10, -10, -10, -10, -10, -20
+};
+
+// Define rookTable
+
+const int Evaluation::rookTable[64] = {
+     0,   0,   0,   5,   5,   0,   0,   0,
+    -5,   0,   0,   0,   0,   0,   0,  -5,
+    -5,   0,   0,   0,   0,   0,   0,  -5,
+    -5,   0,   0,   0,   0,   0,   0,  -5,
+    -5,   0,   0,   0,   0,   0,   0,  -5,
+    -5,   0,   0,   0,   0,   0,   0,  -5,
+     5,  10,  10,  10,  10,  10,  10,   5,
+     0,   0,   0,   0,   0,   0,   0,   0
+};
+
+// Define queenTable
+
+const int Evaluation::queenTable[64] = {
+    -20, -10, -10,  -5,  -5, -10, -10, -20,
+    -10,   0,   0,   0,   0,   0,   0, -10,
+    -10,   0,   5,   5,   5,   5,   0, -10,
+     -5,   0,   5,   5,   5,   5,   0,  -5,
+      0,   0,   5,   5,   5,   5,   0,  -5,
+    -10,   5,   5,   5,   5,   5,   0, -10,
+    -10,   0,   5,   0,   0,   0,   0, -10,
+    -20, -10, -10,  -5,  -5, -10, -10, -20
+};
+
+// King tables for middle game and end game
+const int Evaluation::kingMiddleGameTable[64] = {
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -30, -40, -40, -50, -50, -40, -40, -30,
+    -20, -30, -30, -40, -40, -30, -30, -20,
+    -10, -20, -20, -20, -20, -20, -20, -10,
+     20,  20,   0,   0,   0,   0,  20,  20,
+     20,  30,  10,   0,   0,  10,  30,  20
+};
+
+const int Evaluation::kingEndGameTable[64] = {
+    -50, -40, -30, -20, -20, -30, -40, -50,
+    -30, -20, -10,   0,   0, -10, -20, -30,
+    -30, -10,  20,  30,  30,  20, -10, -30,
+    -30, -10,  30,  40,  40,  30, -10, -30,
+    -30, -10,  30,  40,  40,  30, -10, -30,
+    -30, -10,  20,  30,  30,  20, -10, -30,
+    -30, -30,   0,   0,   0,   0, -30, -30,
+    -50, -30, -30, -30, -30, -30, -30, -50
+};
 
 
 int Evaluation::evaluatePosition(const Board& board){
@@ -24,13 +110,15 @@ int Evaluation::evaluatePosition(const Board& board){
     int material = materialScore(board);
     int pawnStructure = scorePawnStructure(board, whoToMove);
     int mobility = mobilityScore(board);
+    int positional = pieceSquareScore(board);
 
     if(board.DRAW == 1){
         return 0;
     }
+    int totalScore = material + pawnStructure + mobility + positional;
 
     // Return the evaluation relative to the side to move
-    return static_cast<int>((material + pawnStructure + mobility) * whoToMove);
+    return totalScore * whoToMove;
 }
 
 int Evaluation::materialScore(const Board& board) {
@@ -207,4 +295,116 @@ int Evaluation::mobilityScore(const Board& board) {
     int blackMobility = blackMoves.size();
 
     return static_cast<int>(MOBILITY_WEIGHT * (whiteMobility - blackMobility));
+}
+
+
+int Evaluation::pieceSquareScore(const Board& board) {
+    int score = 0;
+    bool endGame = isEndGame(board);
+
+    // Score white pieces
+    for (int piece = WHITE_PAWN; piece <= WHITE_KING; ++piece) {
+        U64 bitboard = board.bitboards[piece];
+        while (bitboard) {
+            int square = bitscanForward(bitboard);
+            clear_bit(bitboard, square);
+
+            switch (piece) {
+                case WHITE_PAWN:
+                    score += pawnTable[square];
+                    break;
+                case WHITE_KNIGHT:
+                    score += knightTable[square];
+                    break;
+                case WHITE_BISHOP:
+                    score += bishopTable[square];
+                    break;
+                case WHITE_ROOK:
+                    score += rookTable[square];
+                    break;
+                case WHITE_QUEEN:
+                    score += queenTable[square];
+                    break;
+                case WHITE_KING:
+                    if (endGame) {
+                        score += kingEndGameTable[square];
+                    } else {
+                        score += kingMiddleGameTable[square];
+                    }
+                    break;
+            }
+        }
+    }
+
+    // Score black pieces
+    for (int piece = BLACK_PAWN; piece <= BLACK_KING; ++piece) {
+        U64 bitboard = board.bitboards[piece];
+        while (bitboard) {
+            int square = bitscanForward(bitboard);
+            clear_bit(bitboard, square);
+
+            int mirroredSquare = mirrorSquare(square);
+
+            switch (piece) {
+                case BLACK_PAWN:
+                    score -= pawnTable[mirroredSquare];
+                    break;
+                case BLACK_KNIGHT:
+                    score -= knightTable[mirroredSquare];
+                    break;
+                case BLACK_BISHOP:
+                    score -= bishopTable[mirroredSquare];
+                    break;
+                case BLACK_ROOK:
+                    score -= rookTable[mirroredSquare];
+                    break;
+                case BLACK_QUEEN:
+                    score -= queenTable[mirroredSquare];
+                    break;
+                case BLACK_KING:
+                    if (endGame) {
+                        score -= kingEndGameTable[mirroredSquare];
+                    } else {
+                        score -= kingMiddleGameTable[mirroredSquare];
+                    }
+                    break;
+            }
+        }
+    }
+
+    return score;
+}
+
+
+bool Evaluation::isEndGame(const Board& board) {
+    int totalMaterial = 0;
+
+    // Exclude pawns and kings (piece enums 0 and 5 for white, 6 and 11 for black)
+    // White minor and major pieces (knight to queen)
+    for (int piece = WHITE_KNIGHT; piece <= WHITE_QUEEN; ++piece) {
+        int count = countBits(board.bitboards[piece]);
+        int pieceValue = getPieceValue(piece);
+        totalMaterial += count * pieceValue;
+    }
+
+    // Black minor and major pieces (knight to queen)
+    for (int piece = BLACK_KNIGHT; piece <= BLACK_QUEEN; ++piece) {
+        int count = countBits(board.bitboards[piece]);
+        int pieceValue = getPieceValue(piece);
+        totalMaterial += count * pieceValue;
+    }
+
+    // If total material is below a threshold, consider it endgame
+    return totalMaterial <= 2400; // Adjust this threshold as needed
+}
+
+
+
+int Evaluation::mirrorSquare(int square) {
+    // Assuming square indices from 0 (a1) to 63 (h8)
+    int rank = square / 8;
+    int file = square % 8;
+    // Mirror the rank (0 becomes 7, 1 becomes 6, ..., 7 becomes 0)
+    int mirroredRank = 7 - rank;
+    return mirroredRank * 8 + file;
 }
