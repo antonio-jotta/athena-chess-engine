@@ -20,8 +20,6 @@ const int Evaluation::pawnTable[64] = {
      0,   0,   0,   0,   0,   0,   0,   0
 };
 
-// Similarly define knightTable, bishopTable, rookTable, queenTable
-
 const int Evaluation::knightTable[64] = {
     -50, -40, -30, -30, -30, -30, -40, -50,
     -40, -20,   0,   0,   0,   0, -20, -40,
@@ -33,7 +31,6 @@ const int Evaluation::knightTable[64] = {
     -50, -40, -30, -30, -30, -30, -40, -50
 };
 
-// Continue for bishopTable, rookTable, queenTable
 
 const int Evaluation::bishopTable[64] = {
     -20, -10, -10, -10, -10, -10, -10, -20,
@@ -46,7 +43,6 @@ const int Evaluation::bishopTable[64] = {
     -20, -10, -10, -10, -10, -10, -10, -20
 };
 
-// Define rookTable
 
 const int Evaluation::rookTable[64] = {
      0,   0,   0,   5,   5,   0,   0,   0,
@@ -59,7 +55,6 @@ const int Evaluation::rookTable[64] = {
      0,   0,   0,   0,   0,   0,   0,   0
 };
 
-// Define queenTable
 
 const int Evaluation::queenTable[64] = {
     -20, -10, -10,  -5,  -5, -10, -10, -20,
@@ -183,11 +178,9 @@ int Evaluation::scorePawnStructure(const Board& board, int side) {
         // Passed Pawn
         if (isPassedPawn(board, square, side)) {
             int bonus = PASSED_PAWN_BONUS[rank];
-            // Connected Passed Pawn
             if (isConnectedPawn(board, square, side)) {
                 bonus += CONNECTED_PASSED_PAWN_BONUS;
             }
-            // Isolated Passed Pawn
             if (isIsolatedPawn(board, square, side)) {
                 bonus = static_cast<int>(bonus * 0.85); // Apply isolation factor
             }
@@ -224,7 +217,6 @@ bool Evaluation::isPassedPawn(const Board& board, int square, int side) {
     if (file > 0) mask |= FILE_MASKS[file - 1];
     if (file < 7) mask |= FILE_MASKS[file + 1];
 
-    // For white pawns, check squares ahead
     if (side == WHITE) {
         U64 squaresAhead = 0ULL;
         for (int r = rank + 1; r <= 7; ++r) {
@@ -233,7 +225,6 @@ bool Evaluation::isPassedPawn(const Board& board, int square, int side) {
         // If there are no opponent pawns ahead in the mask, it's a passed pawn
         return (opponentPawns & squaresAhead) == 0;
     }
-    // For black pawns, check squares behind
     else {
         U64 squaresBehind = 0ULL;
         for (int r = 0; r < rank; ++r) {
@@ -379,29 +370,36 @@ int Evaluation::pieceSquareScore(const Board& board) {
 bool Evaluation::isEndGame(const Board& board) {
     int totalMaterial = 0;
 
-    // Exclude pawns and kings (piece enums 0 and 5 for white, 6 and 11 for black)
-    // White minor and major pieces (knight to queen)
+    // Exclude pawns and kings 
+    // White minor and major pieces 
     for (int piece = WHITE_KNIGHT; piece <= WHITE_QUEEN; ++piece) {
         int count = countBits(board.bitboards[piece]);
         int pieceValue = getPieceValue(piece);
         totalMaterial += count * pieceValue;
     }
 
-    // Black minor and major pieces (knight to queen)
+    // Black minor and major pieces 
     for (int piece = BLACK_KNIGHT; piece <= BLACK_QUEEN; ++piece) {
         int count = countBits(board.bitboards[piece]);
         int pieceValue = getPieceValue(piece);
         totalMaterial += count * pieceValue;
     }
 
-    // If total material is below a threshold, consider it endgame
-    return totalMaterial <= 2400; // Adjust this threshold as needed
+    // Piece values:
+    /*
+    Pawn = 100
+    Knight = 300
+    Bishop = 300
+    Rook = 500
+    Queen = 900
+    */
+    // If the total material is bellow this treshold, we are in endgame
+    return totalMaterial <= 1800; 
 }
 
 
 
 int Evaluation::mirrorSquare(int square) {
-    // Assuming square indices from 0 (a1) to 63 (h8)
     int rank = square / 8;
     int file = square % 8;
     // Mirror the rank (0 becomes 7, 1 becomes 6, ..., 7 becomes 0)

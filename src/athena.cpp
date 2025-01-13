@@ -47,8 +47,6 @@ int main() {
         std::vector<Move> move_list;
         moveGenerator.generateAllLegalMoves(board, move_list);
 
-
-        // Check for game over conditions
         if (isGameOver(board, moveGenerator, move_list)) {
             std::cout << "Game over!\n";
             break;
@@ -83,7 +81,6 @@ int main() {
                 continue;
             }
 
-            // Make the move on the board
             board.makeMove(userMove);
             board.printBoard();
 

@@ -235,7 +235,7 @@ void Board::printBoard() {
     }
     std::cout << "\n   A B C D E F G H\n";
     std::cout << "Side to move: " << (side == WHITE ? "White\n" : "Black\n");
-    std::cout << "En Passant: " << (en_passant != -1 ? std::to_string(en_passant) : "None") << "\n";
+    std::cout << "En Passant: " << (en_passant != -1 ? squareToAlgebraic(en_passant) : "None") << "\n";
     std::cout << "Castling: " << getCastlingRightsString() << "\n";}
 
 
