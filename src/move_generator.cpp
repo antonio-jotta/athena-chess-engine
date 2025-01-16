@@ -16,7 +16,6 @@ void MoveGenerator::generateAllLegalMoves(const Board& board, std::vector<Move>&
     
     // For each move, check if it's legal
     for (const Move& move : pseudolegal_moves) {
-        // Make a copy of the board
         Board board_copy = board;
 
         // Make the move on the copy, do not switch sides
@@ -38,11 +37,10 @@ void MoveGenerator::generateAllLegalMoves(const Board& board, std::vector<Move>&
 }
 
 void MoveGenerator::generateAllCaptureMoves(const Board& board, std::vector<Move>& move_list) {
-    // Generate all legal moves first
+    
     std::vector<Move> all_moves;
     generateAllLegalMoves(board, all_moves);
     
-    // Iterate through all moves and select only the capture moves
     for (const Move& move : all_moves) {
         if (move.captured_piece != NO_PIECE) {
             move_list.push_back(move);
@@ -62,7 +60,6 @@ void MoveGenerator::generatePawnMoves(const Board& board, std::vector<Move>& mov
     int promotion_rank = (side == WHITE) ? 7 : 0;
     int en_passant_square = board.en_passant; // -1 if not available
 
-    // Direction offsets for pawn captures
     int capture_offsets[2];
     if (side == WHITE) {
         capture_offsets[0] = NORTH_WEST;
@@ -208,7 +205,6 @@ void MoveGenerator::generateKnightMoves(const Board& board, std::vector<Move>& m
         int knight_square = bitscanForward(knights);
         clear_bit(knights, knight_square);
 
-        // Possible knight move offsets
         const int knight_offsets[8] = {
             17, 15, 10, 6, -6, -10, -15, -17
         };
@@ -217,7 +213,6 @@ void MoveGenerator::generateKnightMoves(const Board& board, std::vector<Move>& m
         for (int i = 0; i < 8; ++i) {
             int to_square = knight_square + knight_offsets[i];
 
-            // Check if the destination square is within the board bounds
             if (to_square >= 0 && to_square < 64) {
                 // Check for boundary crossing to prevent wrap-around
                 if (!isKnightMoveBoundaryCrossed(knight_square, to_square)) {
@@ -260,7 +255,6 @@ void MoveGenerator::generateBishopMoves(const Board& board, std::vector<Move>& m
         int bishop_square = bitscanForward(bishops);
         clear_bit(bishops, bishop_square);
 
-        // Direction offsets for the bishop 
         const int directions[4] = {NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
 
         // Generate moves in all four directions
@@ -289,7 +283,7 @@ void MoveGenerator::generateRookMoves(const Board& board, std::vector<Move>& mov
     while (rooks) {
         int rook_square = bitscanForward(rooks);
         clear_bit(rooks, rook_square);
-        // Direction offsets for the rook 
+
         const int directions[4] = {NORTH, SOUTH, EAST, WEST}; 
         // Generate moves in all four directions
         for (int dir = 0; dir < 4; ++dir) {
@@ -315,7 +309,7 @@ void MoveGenerator::generateQueenMoves(const Board& board, std::vector<Move>& mo
 
     // Loop through each queen
     while(queens){
-        // Direction offsets for the queen
+
         const int directions[8] = {NORTH, SOUTH, EAST, WEST, NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
         int queen_square = bitscanForward(queens);
         clear_bit(queens, queen_square);
@@ -343,7 +337,7 @@ void MoveGenerator::generateKingMoves(const Board& board, std::vector<Move>& mov
     
     while(king){
         const int directions[8] = {NORTH, SOUTH, EAST, WEST, NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
-            // Generate moves in all directions
+
         for (int dir = 0; dir < 8; ++dir) {
             int direction_offset = directions[dir];
             int to_square = king_square + direction_offset;
@@ -370,7 +364,7 @@ void MoveGenerator::generateKingMoves(const Board& board, std::vector<Move>& mov
                 move_list.emplace_back(king_square, to_square, king_piece, NO_PIECE, NO_PIECE, flags);
             }
         }
-        // Generate castling moves
+
         if (!isKingInCheck(board, side)) {
             generateCastlingMoves(board, move_list, king_square, side);
         }        
@@ -423,14 +417,12 @@ void MoveGenerator::generateEnemyKingMoves(const Board& board, std::vector<Move>
     
     // For each move, check if it's legal
     for (const Move& move : move_list) {
-        // Make a copy of the board
         Board board_copy = board;
 
         // Make the move on the copy, do not switch sides
         board_copy.makeMove(move, false);
         // std::cout << "Move " << squareToAlgebraic(move.from_square)<< " -> " << squareToAlgebraic(move.to_square) << "\n";
         
-        // Check if the king is in check after the move
         if (isKingInCheck(board_copy, opponent_side)) {
             // Move is legal, add to move_list
             move_list.erase(std::find(move_list.begin(), move_list.end(), move));
@@ -445,7 +437,6 @@ bool MoveGenerator::isKingInCheck(const Board& board, int side) {
 
     // Generate attack bitboards for opponent
     int opponent_side = (side == WHITE) ? BLACK : WHITE;
-    // Check for attacks from pawns, knights, bishops, rooks, queens, and the opponent's king
     if (isSquareAttackedByPawn(board, king_square, opponent_side)) return true;
     if (isSquareAttackedByKnight(board, king_square, opponent_side)) return true;
     if (isSquareAttackedByBishop(board, king_square, opponent_side)) return true;
@@ -460,7 +451,6 @@ bool MoveGenerator::isKingInCheck(const Board& board, int side) {
 
 void MoveGenerator::generateCastlingMoves(const Board& board, std::vector<Move>& move_list, int king_square, int side) {
 
-    // King-side castling
     if (canCastleKingSide(board, side)) {
         if (isSafeToCastle(board, king_square, side, "king")) {
             int to_square = (side == WHITE) ? G1 : G8;
@@ -468,7 +458,6 @@ void MoveGenerator::generateCastlingMoves(const Board& board, std::vector<Move>&
         }
     }
 
-    // Queen-side castling
     if (canCastleQueenSide(board, side)) {
         if (isSafeToCastle(board, king_square, side, "queen")) {
             int to_square = (side == WHITE) ? C1 : C8;
@@ -527,7 +516,6 @@ bool MoveGenerator::isSafeToCastle(const Board& board, int king_square, int side
         intermediate_square2 = king_square - 2;  // C1 or C8
     }
 
-    // Create a temporary board for testing each square without making permanent changes
     Board temp_board = board;
     
     // Check if moving to intermediate_square1 or intermediate_square2 would put the king in check
@@ -540,7 +528,7 @@ bool MoveGenerator::isSafeToCastle(const Board& board, int king_square, int side
             return false;
         }
         
-        // Restore the original board position after each test
+        // If its legal, copy back the board
         temp_board = board;
     }
 
@@ -560,7 +548,6 @@ void MoveGenerator::generateSlidingMovesInDirection(
     int to_square = start_square + direction_offset;
 
     while (to_square >= 0 && to_square < 64) {
-        // Debug output for each evaluated square
         //std::cout << "Evaluating move from " << squareToAlgebraic(start_square) << " to " << squareToAlgebraic(to_square) << "\n";
 
         if (isBoundaryCrossed(start_square, to_square, direction_offset)) {
@@ -615,7 +602,6 @@ bool MoveGenerator::isSquareAttackedByPawn(const Board& board, int square, int o
         for (int i = 0; i < 2; ++i) {
             int attack_square = pawn_square + attack_offsets[i];
 
-            // Ensure the attack square is on the board
             if (attack_square < 0 || attack_square >= 64) {
                 continue;
             }
@@ -648,10 +634,8 @@ bool MoveGenerator::isSquareAttackedByKnight(const Board& board, int square, int
         int knight_square = bitscanForward(pieces);
         clear_bit(pieces, knight_square);
 
-        // Knight move offsets
         const int knight_offsets[8] = {17, 15, 10, 6, -6, -10, -15, -17};
 
-        // Generate moves for the knight
         for (int i = 0; i < 8; ++i) {
             int to_square = knight_square + knight_offsets[i];
 
@@ -681,7 +665,6 @@ bool MoveGenerator::isSquareAttackedByBishop(const Board& board, int square, int
         int piece_square = bitscanForward(pieces);
         clear_bit(pieces, piece_square);
 
-        // Generate the bishop's attacks in the diagonal
         const int directions[4] = {NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
         for (int dir = 0; dir < 4; ++dir) {
             int to_square = piece_square;
@@ -718,7 +701,6 @@ bool MoveGenerator::isSquareAttackedByRook(const Board& board, int square, int o
         int piece_square = bitscanForward(pieces);
         clear_bit(pieces, piece_square);
 
-        // Generate rook attacks inline
         const int directions[4] = {NORTH, SOUTH, EAST, WEST}; 
         for (int dir = 0; dir < 4; ++dir) {
             int to_square = piece_square;
@@ -755,7 +737,6 @@ bool MoveGenerator::isSquareAttackedByQueen(const Board& board, int square, int 
         int piece_square = bitscanForward(pieces);
         clear_bit(pieces, piece_square);
 
-        // Generate rook attacks inline
         const int directions[8] = {NORTH, SOUTH, EAST, WEST, NORTH_EAST, NORTH_WEST, SOUTH_EAST, SOUTH_WEST}; 
         for (int dir = 0; dir < 8; ++dir) {
             int to_square = piece_square;

@@ -393,11 +393,9 @@ std::string Board::generateFEN() const {
 // Find the index of the least significant 1 bit in b (returns 0-based index)
 // Used for iteration in the bitboard
 int bitscanForward(U64 b) {
-    // Use GCC/Clang built-in intrinsic if available
     #if defined(__GNUC__) || defined(__clang__)
         return __builtin_ctzll(b);
     #else
-        // Fallback method if no intrinsics are available
         int index = 0;
         while ((b & 1) == 0) {
             b >>= 1;
@@ -409,11 +407,9 @@ int bitscanForward(U64 b) {
 
 // Count the number of 1 bits in b (population count)
 int countBits(U64 b) {
-    // Use GCC/Clang built-in intrinsic if available
     #if defined(__GNUC__) || defined(__clang__)
         return __builtin_popcountll(b);
     #else
-        // Fallback method if no intrinsics are available
         int count = 0;
         while (b) {
             count += b & 1;
@@ -435,13 +431,12 @@ std::string squareToAlgebraic(int square) {
         return "Invalid";  // Return an error string if out of bounds
     }
     
-    char file = 'a' + (square % 8);       // File from 'a' to 'h'
-    char rank = '1' + (square / 8);       // Rank from '1' to '8'
+    char file = 'a' + (square % 8);       
+    char rank = '1' + (square / 8);       
     
     return std::string(1, file) + std::string(1, rank);
 }
 
-// In board.h or a utility header
 int algebraicToSquare(const std::string& algebraic) {
     int file = algebraic[0] - 'a';
     int rank = algebraic[1] - '1';
@@ -514,15 +509,13 @@ void Board::initZobristKeys() {
         }
     }
 
-    // Initialize side key
+    // Key initializations
     side_key = dist(rng);
 
-    // Initialize en passant keys
     for (int square = 0; square < 64; ++square) {
         enpassant_keys[square] = dist(rng);
     }
 
-    // Initialize castling keys
     for (int i = 0; i < 16; ++i) {
         castling_keys[i] = dist(rng);
     }
@@ -637,4 +630,3 @@ void Board::updateRepetitionHistory(const Move& move) {
 bool Board::isFiftyMoveRule() const {
     return halfmove_clock >= 100;
 }
-
